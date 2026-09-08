@@ -164,22 +164,38 @@ class GeospatialService:
 
                 # 保存対象が1つ以上ある場合のみフォルダ作成・保存
                 if save_targets:
+                    TRUSTED_BASE_DIR = Path(base_output_folder).resolve()
                     output_dir = getattr(req, "output_dir", None)
                     if (
                         output_dir
                         and isinstance(output_dir, str)
                         and output_dir.strip()
                     ):
-                        output_folder = Path(output_dir.strip()) / now_folder
+                        normalized_dir = output_dir.strip().replace("\\", "/")
+                        target = (TRUSTED_BASE_DIR / normalized_dir).resolve()
+                        if target.is_relative_to(TRUSTED_BASE_DIR):
+                            output_folder = target / now_folder
+                        else:
+                            self.logger.warning(
+                                f"不正な出力ディレクトリが指定されたためデフォルトを使用します: {output_dir}"
+                            )
+                            output_folder = TRUSTED_BASE_DIR / now_folder
                     else:
-                        output_folder = Path(base_output_folder) / now_folder
+                        output_folder = TRUSTED_BASE_DIR / now_folder
                     output_folder.mkdir(parents=True, exist_ok=True)
 
                     for idx, payload_to_write, file_name in save_targets:
-                        if not file_name:
-                            file_name = f"api_result_{idx + 1}.geojson"
+                        norm_file_name = file_name.strip().replace("\\", "/") if (file_name and isinstance(file_name, str)) else ""
+                        safe_file_name = Path(norm_file_name).name.strip() if norm_file_name else ""
+                        if not safe_file_name or safe_file_name in (".", ".."):
+                            safe_file_name = f"api_result_{idx + 1}.geojson"
 
-                        file_path = output_folder / file_name
+                        file_path = output_folder / safe_file_name
+                        if not file_path.resolve().is_relative_to(output_folder.resolve()):
+                            self.logger.warning(
+                                f"不正なファイルパスを検知したためデフォルト名を使用します: {file_name}"
+                            )
+                            file_path = output_folder / f"api_result_{idx + 1}.geojson"
                         try:
                             with open(file_path, "w", encoding="utf-8") as f:
                                 if isinstance(payload_to_write, (dict, list)):
