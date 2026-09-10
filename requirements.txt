@@ -3,4 +3,3 @@ mcp
 shapely
 pyproj
 requests
-asyncio
