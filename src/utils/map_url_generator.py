@@ -348,4 +348,4 @@ def build_map_url(
     url_params.append(f"y={lon}")
     url_params.append(f"zoom={MAP_URL_ZOOM}")
 
-    return base_url + "&".join(url_params)
+    return base_url + "&".join(url_params) + f"#{MAP_URL_ZOOM}/{lat}/{lon}"
