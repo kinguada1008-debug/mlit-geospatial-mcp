@@ -51,6 +51,10 @@ LOOKUP_TOKYO_SPATIAL_TOOL = types.Tool(
                 "type": "number",
                 "description": "対象地点の経度（10進法、小数。例: 139.718817）",
             },
+            "comprehensive": {
+                "type": "boolean",
+                "description": "Trueの場合、追加6系統（防火・液状化・盛土・高潮津波・将来人口推計・地区計画）を含めた全13系統の総合カルテを返却します（デフォルト: False）。",
+            },
         },
         "required": ["lat", "lon"],
     },
@@ -84,9 +88,13 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
 
         lat = float(arguments["lat"])
         lon = float(arguments["lon"])
+        is_comprehensive = bool(arguments.get("comprehensive", False))
         db = TokyoSpatialDB()
         try:
-            result = db.lookup_carte_7layers(lat, lon)
+            if is_comprehensive:
+                result = db.lookup_comprehensive_13layers(lat, lon)
+            else:
+                result = db.lookup_carte_7layers(lat, lon)
         finally:
             db.close()
 

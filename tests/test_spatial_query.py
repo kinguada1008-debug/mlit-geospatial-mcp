@@ -70,5 +70,32 @@ class TestTokyoSpatialDB(unittest.TestCase):
         finally:
             db.close()
 
+    def test_mesh250_calculation(self):
+        from src.spatial_query import latlon_to_mesh250
+        # 南青山 (35.662846, 139.718817)
+        code = latlon_to_mesh250(35.662846, 139.718817)
+        self.assertEqual(len(code), 10)
+        self.assertTrue(code.startswith("5339"))
+
+    @unittest.skipUnless(DB_PATH.exists(), "tokyo_spatial.sqlite が存在しない場合はスキップ")
+    def test_tokyo_spatial_db_13layers_fail_closed(self):
+        db = TokyoSpatialDB(DB_PATH)
+        try:
+            res = db.lookup_comprehensive_13layers(35.662846, 139.718817)
+            # 既存7系統のキーが存在すること
+            self.assertIn("zoning", res)
+            self.assertIn("land_price", res)
+            self.assertIn("school_district", res)
+            # 新規6系統がフェイルクローズ（未投入時は not_loaded）で安全に返却されること
+            self.assertEqual(res["mesh250_code"], "5339359741")
+            self.assertEqual(res["fire_prevention"]["status"], "not_loaded")
+            self.assertEqual(res["embankment"]["status"], "not_loaded")
+            self.assertEqual(res["coastal_hazard"]["status"], "not_loaded")
+            self.assertEqual(res["liquefaction"]["status"], "not_loaded")
+            self.assertEqual(res["population_projection"]["status"], "not_loaded")
+            self.assertEqual(res["district_plan"]["status"], "not_loaded")
+        finally:
+            db.close()
+
 if __name__ == "__main__":
     unittest.main()

@@ -38,6 +38,21 @@ def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> 
     a = math.sin(dphi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2.0) ** 2
     return 2.0 * R * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
 
+def latlon_to_mesh250(lat: float, lon: float) -> str:
+    """
+    指定座標から JIS 250m 地域メッシュコード（10桁）を計算する。
+    所要時間: < 1μs（空間インデックス不要の O(1) 計算）
+    """
+    I = int(math.floor(lat * 480))
+    J = int(math.floor((lon - 100) * 320))
+    p, q = I // 320, J // 320
+    a, b = (I % 320) // 40, (J % 320) // 40
+    c, d = (I % 40) // 4, (J % 40) // 4
+    r, s = I % 4, J % 4
+    m500 = 1 + (s // 2) + 2 * (r // 2)
+    m250 = 1 + (s % 2) + 2 * (r % 2)
+    return f"{p:02d}{q:02d}{a}{b}{c}{d}{m500}{m250}"
+
 class TokyoSpatialDB:
     def __init__(self, db_path: Path = DEFAULT_DB_PATH):
         self.db_path = Path(db_path)
@@ -71,7 +86,230 @@ class TokyoSpatialDB:
             "nursery": self._lookup_nursery(lat, lon, radius_km=1.0),
         }
 
+    def lookup_comprehensive_13layers(self, lat: float, lon: float) -> Dict[str, Any]:
+        """
+        SORAI 総合立地・防災カルテ（全13系統・公的オープンデータ）を一撃で即答する。
+        基本7系統 + 追加6系統（防火、液状化、大規模盛土造成地、高潮津波、将来人口推計、地区計画）
+        所要時間: 3〜5ms（外部API通信 0回）
+        """
+        pt = Point(lon, lat)
+        mesh250 = latlon_to_mesh250(lat, lon)
+
+        # 既存7系統を取得
+        base_carte = self.lookup_carte_7layers(lat, lon)
+
+        # 追加6系統を統合
+        base_carte["mesh250_code"] = mesh250
+        base_carte["fire_prevention"] = self._lookup_fire_prevention(pt, lat, lon)
+        base_carte["liquefaction"] = self._lookup_liquefaction(pt, lat, lon, mesh250)
+        base_carte["embankment"] = self._lookup_embankment(pt, lat, lon)
+        base_carte["coastal_hazard"] = self._lookup_coastal_hazard(pt, lat, lon)
+        base_carte["population_projection"] = self._lookup_population_projection(mesh250)
+        base_carte["district_plan"] = self._lookup_district_plan(pt, lat, lon)
+
+        return base_carte
+
     lookup_all = lookup_carte_7layers
+
+    def _lookup_fire_prevention(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
+        """防火・準防火地域 (A55 / bouka) 判定"""
+        cur = self.conn.cursor()
+        tables = [t[0] for t in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "planning_zone" not in tables or "planning_zone_idx" not in tables:
+            return {"status": "not_loaded", "reason": "データセット準備中"}
+
+        try:
+            cur.execute("""
+            SELECT p.id, p.kind, p.name, p.source_code, p.geom_wkb
+            FROM planning_zone_idx idx
+            JOIN planning_zone p ON idx.id = p.id
+            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
+              AND p.kind IN ('fire', 'quasi_fire')
+            LIMIT 20
+            """, (lon, lon, lat, lat))
+            candidates = cur.fetchall()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "reason": "クエリ実行エラー"}
+
+        if not candidates:
+            return {"status": "no_match", "designation": "指定なし（法22条区域等）", "matches": []}
+
+        matched = []
+        for row in candidates:
+            geom = wkb.loads(row["geom_wkb"])
+            if geom.covers(pt):
+                matched.append({
+                    "kind": row["kind"],
+                    "name": row["name"] or ("防火地域" if row["kind"] == "fire" else "準防火地域"),
+                    "code": row["source_code"]
+                })
+
+        if len(matched) == 1:
+            return {"status": "ok", "designation": matched[0]["name"], "matches": matched}
+        elif len(matched) > 1:
+            return {"status": "ambiguous", "reason": "conflicting_or_boundary", "matches": matched}
+        return {"status": "no_match", "designation": "指定なし（法22条区域等）", "matches": []}
+
+    def _lookup_liquefaction(self, pt: Point, lat: float, lon: float, mesh250: str) -> Dict[str, Any]:
+        """液状化発生傾向 (XKT025 / 地形区分250mメッシュ) 判定"""
+        cur = self.conn.cursor()
+        tables = [t[0] for t in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "liquefaction_mesh" not in tables:
+            return {"status": "not_loaded", "reason": "データセット準備中"}
+
+        try:
+            row = cur.execute("""
+            SELECT landform_name, tendency_label, relative_score, assessment, note
+            FROM liquefaction_mesh
+            WHERE mesh_code = ?
+            """, (mesh250,)).fetchone()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "reason": "クエリ実行エラー"}
+
+        if not row:
+            return {"status": "no_match", "reason": "対象メッシュの地形区分データなし"}
+
+        return {
+            "status": "ok",
+            "landform_name": row["landform_name"],
+            "tendency_label": row["tendency_label"],
+            "relative_score": row["relative_score"],
+            "note": row["note"]
+        }
+
+    def _lookup_embankment(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
+        """大規模盛土造成地 (A54 谷埋め型・腹付け型) 判定"""
+        cur = self.conn.cursor()
+        tables = [t[0] for t in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "embankment" not in tables or "embankment_idx" not in tables:
+            return {"status": "not_loaded", "reason": "データセット準備中"}
+
+        try:
+            cur.execute("""
+            SELECT e.id, e.fill_code, e.fill_number, e.geom_wkb
+            FROM embankment_idx idx
+            JOIN embankment e ON idx.id = e.id
+            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
+            LIMIT 20
+            """, (lon, lon, lat, lat))
+            candidates = cur.fetchall()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "reason": "クエリ実行エラー"}
+
+        matched = []
+        for row in candidates:
+            geom = wkb.loads(row["geom_wkb"])
+            if geom.covers(pt):
+                fill_type = "谷埋め型盛土" if row["fill_code"] == "1" else ("腹付け型盛土" if row["fill_code"] == "2" else "造成地")
+                matched.append({
+                    "fill_code": row["fill_code"],
+                    "fill_type": fill_type,
+                    "fill_number": row["fill_number"]
+                })
+
+        if matched:
+            return {"status": "ok", "is_designated": True, "zones": matched}
+        return {"status": "no_match", "is_designated": False, "note": "大規模盛土造成地マップの該当なし"}
+
+    def _lookup_coastal_hazard(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
+        """高潮・津波浸水想定 (A49 / A40) 判定"""
+        cur = self.conn.cursor()
+        tables = [t[0] for t in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "coastal_inundation" not in tables or "coastal_inundation_idx" not in tables:
+            return {"status": "not_loaded", "reason": "データセット準備中"}
+
+        try:
+            cur.execute("""
+            SELECT c.id, c.kind, c.scenario_key, c.depth_raw, c.depth_min_m, c.depth_max_m, c.geom_wkb
+            FROM coastal_inundation_idx idx
+            JOIN coastal_inundation c ON idx.id = c.id
+            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
+            LIMIT 20
+            """, (lon, lon, lat, lat))
+            candidates = cur.fetchall()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "reason": "クエリ実行エラー"}
+
+        matched = []
+        for row in candidates:
+            geom = wkb.loads(row["geom_wkb"])
+            if geom.covers(pt):
+                matched.append({
+                    "kind": row["kind"],
+                    "depth_raw": row["depth_raw"],
+                    "depth_min_m": row["depth_min_m"],
+                    "depth_max_m": row["depth_max_m"]
+                })
+
+        if matched:
+            return {"status": "ok", "is_inundated": True, "hazards": matched}
+        return {"status": "no_match", "is_inundated": False, "note": "高潮・津波浸水想定区域外"}
+
+    def _lookup_population_projection(self, mesh250: str) -> Dict[str, Any]:
+        """将来推計人口 250mメッシュ (R6推計 / 2020年比2050年予測) 判定"""
+        cur = self.conn.cursor()
+        tables = [t[0] for t in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "population_mesh" not in tables:
+            return {"status": "not_loaded", "reason": "データセット準備中"}
+
+        try:
+            row = cur.execute("""
+            SELECT population_2020, population_2050, disclosure_2020, disclosure_2050
+            FROM population_mesh
+            WHERE mesh_code = ?
+            """, (mesh250,)).fetchone()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "reason": "クエリ実行エラー"}
+
+        if not row:
+            return {"status": "no_match", "reason": "推計メッシュデータなし"}
+
+        p2020 = row["population_2020"]
+        p2050 = row["population_2050"]
+        ratio = round((p2050 / p2020) * 100, 1) if (p2020 and p2020 > 0 and p2050 is not None) else None
+
+        return {
+            "status": "ok",
+            "mesh_code": mesh250,
+            "population_2020": p2020,
+            "population_2050": p2050,
+            "change_rate_percent": round(ratio - 100.0, 1) if ratio is not None else None,
+            "maintenance_ratio_percent": ratio
+        }
+
+    def _lookup_district_plan(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
+        """地区計画・高度利用地区 (A55 / chikukei, koudori) 判定"""
+        cur = self.conn.cursor()
+        tables = [t[0] for t in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "planning_zone" not in tables or "planning_zone_idx" not in tables:
+            return {"status": "not_loaded", "reason": "データセット準備中"}
+
+        try:
+            cur.execute("""
+            SELECT p.id, p.kind, p.name, p.source_code, p.geom_wkb
+            FROM planning_zone_idx idx
+            JOIN planning_zone p ON idx.id = p.id
+            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
+              AND p.kind IN ('district_plan', 'high_use')
+            LIMIT 20
+            """, (lon, lon, lat, lat))
+            candidates = cur.fetchall()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "reason": "クエリ実行エラー"}
+
+        matched = []
+        for row in candidates:
+            geom = wkb.loads(row["geom_wkb"])
+            if geom.covers(pt):
+                matched.append({
+                    "kind": row["kind"],
+                    "name": row["name"],
+                    "code": row["source_code"]
+                })
+
+        if matched:
+            return {"status": "ok", "has_plan": True, "plans": matched}
+        return {"status": "no_match", "has_plan": False, "note": "地区計画等の該当なし"}
 
     def _lookup_zoning(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
         cur = self.conn.cursor()

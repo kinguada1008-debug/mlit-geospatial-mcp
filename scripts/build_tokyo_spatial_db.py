@@ -213,7 +213,70 @@ def init_database(db_path: Path) -> sqlite3.Connection:
     """)
     cur.execute("CREATE VIRTUAL TABLE nursery_facility_idx USING rtree(id, minX, maxX, minY, maxY)")
 
-    # 8. メタデータ
+    # 8. 都市計画詳細 (Planning Zone: 防火・準防火・地区計画・高度利用)
+    cur.execute("""
+    CREATE TABLE planning_zone (
+        id INTEGER PRIMARY KEY,
+        kind TEXT NOT NULL,
+        name TEXT,
+        source_code TEXT,
+        city_code TEXT,
+        geom_wkb BLOB NOT NULL
+    )
+    """)
+    cur.execute("CREATE VIRTUAL TABLE planning_zone_idx USING rtree(id, minX, maxX, minY, maxY)")
+
+    # 9. 大規模盛土造成地 (Embankment: 谷埋め型・腹付け型造成地)
+    cur.execute("""
+    CREATE TABLE embankment (
+        id INTEGER PRIMARY KEY,
+        fill_code TEXT NOT NULL,
+        fill_number TEXT,
+        city_code TEXT,
+        geom_wkb BLOB NOT NULL
+    )
+    """)
+    cur.execute("CREATE VIRTUAL TABLE embankment_idx USING rtree(id, minX, maxX, minY, maxY)")
+
+    # 10. 沿岸ハザード (Coastal Inundation: 高潮・津波浸水想定)
+    cur.execute("""
+    CREATE TABLE coastal_inundation (
+        id INTEGER PRIMARY KEY,
+        kind TEXT NOT NULL,
+        scenario_key TEXT,
+        depth_raw TEXT,
+        depth_min_m REAL,
+        depth_max_m REAL,
+        geom_wkb BLOB NOT NULL
+    )
+    """)
+    cur.execute("CREATE VIRTUAL TABLE coastal_inundation_idx USING rtree(id, minX, maxX, minY, maxY)")
+
+    # 11. 液状化発生傾向メッシュ (Liquefaction: 地形区分250mメッシュ)
+    cur.execute("""
+    CREATE TABLE liquefaction_mesh (
+        mesh_code TEXT PRIMARY KEY,
+        landform_name TEXT,
+        tendency_label TEXT,
+        relative_score INTEGER,
+        assessment TEXT,
+        note TEXT
+    ) WITHOUT ROWID
+    """)
+
+    # 12. 将来推計人口メッシュ (Population Projection: 250mメッシュ 2020年比2050年予測)
+    cur.execute("""
+    CREATE TABLE population_mesh (
+        mesh_code TEXT PRIMARY KEY,
+        city_code TEXT,
+        population_2020 REAL,
+        population_2050 REAL,
+        disclosure_2020 TEXT,
+        disclosure_2050 TEXT
+    ) WITHOUT ROWID
+    """)
+
+    # 13. メタデータ
     cur.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT)")
     conn.commit()
     return conn
