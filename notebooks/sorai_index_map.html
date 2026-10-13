@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_23037d6c5fcdc55160373a187b23bbc6 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_23037d6c5fcdc55160373a187b23bbc6" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_23037d6c5fcdc55160373a187b23bbc6 = L.map(
+                "map_23037d6c5fcdc55160373a187b23bbc6",
+                {
+                    center: [35.66, 139.735],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+            L.control.scale().addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+
+            
+
+        
+    
+            var tile_layer_060a332a0b1527f3860eaaff1b33fc0b = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_060a332a0b1527f3860eaaff1b33fc0b.addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+        
+    
+            var feature_group_fe13b4a1a7674942092c0b409070c37a = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_05a4e1072c71b48ab6579f692e3d6219 = L.marker(
+                [35.653, 139.721],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_a3b870b0f1f0d2e959c2f4fe142e7354 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8dc0499ac3f2b90ca3581c3fbfd448e3 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_538e408bc2aaac36e1364f0c9c268aec = $(`<div id="html_538e408bc2aaac36e1364f0c9c268aec" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">広尾ガーデンヒルズ</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・住居専用（渋谷）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(90点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 28/35 点 <span style="color:#718096;">(第２種中高層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_8dc0499ac3f2b90ca3581c3fbfd448e3.setContent(html_538e408bc2aaac36e1364f0c9c268aec);
+            
+        
+
+        marker_05a4e1072c71b48ab6579f692e3d6219.bindPopup(popup_8dc0499ac3f2b90ca3581c3fbfd448e3)
+        ;
+
+        
+    
+    
+            marker_05a4e1072c71b48ab6579f692e3d6219.bindTooltip(
+                `<div>
+                     広尾ガーデンヒルズ — Sランク (90点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_05a4e1072c71b48ab6579f692e3d6219.setIcon(icon_a3b870b0f1f0d2e959c2f4fe142e7354);
+            
+    
+            var marker_d2de6bf1f89f2d733a31c4481c8fac27 = L.marker(
+                [35.663, 139.718],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_74145a23f67cac2a28950fcf10f26543 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_2db02d314b0cac287f716310e88a3e35 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_d7137561b80735e60803756e5c7fea49 = $(`<div id="html_d7137561b80735e60803756e5c7fea49" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">南青山テラスレジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・低層住居（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(93点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 31/35 点 <span style="color:#718096;">(第１種中高層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_2db02d314b0cac287f716310e88a3e35.setContent(html_d7137561b80735e60803756e5c7fea49);
+            
+        
+
+        marker_d2de6bf1f89f2d733a31c4481c8fac27.bindPopup(popup_2db02d314b0cac287f716310e88a3e35)
+        ;
+
+        
+    
+    
+            marker_d2de6bf1f89f2d733a31c4481c8fac27.bindTooltip(
+                `<div>
+                     南青山テラスレジデンス — Sランク (93点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d2de6bf1f89f2d733a31c4481c8fac27.setIcon(icon_74145a23f67cac2a28950fcf10f26543);
+            
+    
+            var marker_111d39ab36a9026b4aede72e8fbcc192 = L.marker(
+                [35.654, 139.731],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_11d483d867e1b11642cdbb3dd2475730 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_a00e9a91b1bac9f855063c7932bcc9ab = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_73b40d7be7deb9307b36f997c97659d9 = $(`<div id="html_73b40d7be7deb9307b36f997c97659d9" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">元麻布ヒルズ</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・住居専用（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(90点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 28/35 点 <span style="color:#718096;">(第２種中高層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_a00e9a91b1bac9f855063c7932bcc9ab.setContent(html_73b40d7be7deb9307b36f997c97659d9);
+            
+        
+
+        marker_111d39ab36a9026b4aede72e8fbcc192.bindPopup(popup_a00e9a91b1bac9f855063c7932bcc9ab)
+        ;
+
+        
+    
+    
+            marker_111d39ab36a9026b4aede72e8fbcc192.bindTooltip(
+                `<div>
+                     元麻布ヒルズ — Sランク (90点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_111d39ab36a9026b4aede72e8fbcc192.setIcon(icon_11d483d867e1b11642cdbb3dd2475730);
+            
+    
+            var marker_839736e9c9ca2adeba3064829346aa14 = L.marker(
+                [35.66, 139.691],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_728cc3fb337881234988157799147fef = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_bd81737d2b02510decd251059d6d2187 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_b9f296ccae0d1f6cdf1b4ddd2f3cb794 = $(`<div id="html_b9f296ccae0d1f6cdf1b4ddd2f3cb794" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">松濤レジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・第一種低層（渋谷）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(97点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 35/35 点 <span style="color:#718096;">(第１種低層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_bd81737d2b02510decd251059d6d2187.setContent(html_b9f296ccae0d1f6cdf1b4ddd2f3cb794);
+            
+        
+
+        marker_839736e9c9ca2adeba3064829346aa14.bindPopup(popup_bd81737d2b02510decd251059d6d2187)
+        ;
+
+        
+    
+    
+            marker_839736e9c9ca2adeba3064829346aa14.bindTooltip(
+                `<div>
+                     松濤レジデンス — Sランク (97点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_839736e9c9ca2adeba3064829346aa14.setIcon(icon_728cc3fb337881234988157799147fef);
+            
+    
+            var marker_7bfa98ab3f72e65c11585129a591d519 = L.marker(
+                [35.638, 139.725],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_7f19c27ca32ba791877cb761fe12551f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_e8b193fe8057fac3c14ee42ab50e856a = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_d3641ca69f370de0182a949073bdac94 = $(`<div id="html_d3641ca69f370de0182a949073bdac94" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">白金台ハウス</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・住居専用（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(90点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 28/35 点 <span style="color:#718096;">(第２種中高層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_e8b193fe8057fac3c14ee42ab50e856a.setContent(html_d3641ca69f370de0182a949073bdac94);
+            
+        
+
+        marker_7bfa98ab3f72e65c11585129a591d519.bindPopup(popup_e8b193fe8057fac3c14ee42ab50e856a)
+        ;
+
+        
+    
+    
+            marker_7bfa98ab3f72e65c11585129a591d519.bindTooltip(
+                `<div>
+                     白金台ハウス — Sランク (90点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_7bfa98ab3f72e65c11585129a591d519.setIcon(icon_7f19c27ca32ba791877cb761fe12551f);
+            
+    
+            var marker_0e2e57658cf40db09d2a1ef787b8750f = L.marker(
+                [35.688, 139.738],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_b56a508f6946b45641c62eb99636b817 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_20bc3e7be9e1d029a4530822e8a483fd = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_fc5709144af11f882a7dc16554d6f40b = $(`<div id="html_fc5709144af11f882a7dc16554d6f40b" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">番町パークハウス</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・文教住居（千代田）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(90点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 28/35 点 <span style="color:#718096;">(第２種中高層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_20bc3e7be9e1d029a4530822e8a483fd.setContent(html_fc5709144af11f882a7dc16554d6f40b);
+            
+        
+
+        marker_0e2e57658cf40db09d2a1ef787b8750f.bindPopup(popup_20bc3e7be9e1d029a4530822e8a483fd)
+        ;
+
+        
+    
+    
+            marker_0e2e57658cf40db09d2a1ef787b8750f.bindTooltip(
+                `<div>
+                     番町パークハウス — Sランク (90点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0e2e57658cf40db09d2a1ef787b8750f.setIcon(icon_b56a508f6946b45641c62eb99636b817);
+            
+    
+            var marker_1be7c5050e964ee795906773453dd6de = L.marker(
+                [35.698, 139.734],
+                {
+}
+            ).addTo(feature_group_fe13b4a1a7674942092c0b409070c37a);
+        
+    
+            var icon_e7e2f302664e6ac7353c762d0a1bbb80 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkblue",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0c7ac4dcd631c2eb0a4daedeed54b734 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_34b2488969c5f9a2eaf4f659678719df = $(`<div id="html_34b2488969c5f9a2eaf4f659678719df" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #1a2b4c; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">市谷砂土原町レジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・閑静住宅街（新宿）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #1a2b4c;">S ランク <span style="font-size: 13px; font-weight: normal;">(93点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 31/35 点 <span style="color:#718096;">(第１種中高層住居専用地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_0c7ac4dcd631c2eb0a4daedeed54b734.setContent(html_34b2488969c5f9a2eaf4f659678719df);
+            
+        
+
+        marker_1be7c5050e964ee795906773453dd6de.bindPopup(popup_0c7ac4dcd631c2eb0a4daedeed54b734)
+        ;
+
+        
+    
+    
+            marker_1be7c5050e964ee795906773453dd6de.bindTooltip(
+                `<div>
+                     市谷砂土原町レジデンス — Sランク (93点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_1be7c5050e964ee795906773453dd6de.setIcon(icon_e7e2f302664e6ac7353c762d0a1bbb80);
+            
+    
+            feature_group_fe13b4a1a7674942092c0b409070c37a.addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+        
+    
+            var feature_group_b0df1c7252522be01640a55f2e50688b = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_855d1875a121dd1e184ca5d522e70179 = L.marker(
+                [35.649, 139.703],
+                {
+}
+            ).addTo(feature_group_b0df1c7252522be01640a55f2e50688b);
+        
+    
+            var icon_57280f7bf5847884340de9d12afca316 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_c8d13783e6f199fd22f77134553b959c = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_43387c3de4ef8a6b7c3982f2847ede41 = $(`<div id="html_43387c3de4ef8a6b7c3982f2847ede41" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #2c5282; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">代官山アドレス</h4>                 <div style="font-size: 11px; opacity: 0.9;">高台・洗練住環境（渋谷）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #2c5282;">A ランク <span style="font-size: 13px; font-weight: normal;">(84点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 22/35 点 <span style="color:#718096;">(第２種住居地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_c8d13783e6f199fd22f77134553b959c.setContent(html_43387c3de4ef8a6b7c3982f2847ede41);
+            
+        
+
+        marker_855d1875a121dd1e184ca5d522e70179.bindPopup(popup_c8d13783e6f199fd22f77134553b959c)
+        ;
+
+        
+    
+    
+            marker_855d1875a121dd1e184ca5d522e70179.bindTooltip(
+                `<div>
+                     代官山アドレス — Aランク (84点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_855d1875a121dd1e184ca5d522e70179.setIcon(icon_57280f7bf5847884340de9d12afca316);
+            
+    
+            var marker_e4385bba550b89d8ca7cb6cfcf10dfd0 = L.marker(
+                [35.642, 139.713],
+                {
+}
+            ).addTo(feature_group_b0df1c7252522be01640a55f2e50688b);
+        
+    
+            var icon_2bd3f3f6bf92783b6e9696a8bd2d1d46 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8a8b9df9063b0d1f67b488633f453ffa = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_76e8007da49f9383cffe516a312c6403 = $(`<div id="html_76e8007da49f9383cffe516a312c6403" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #2c5282; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">恵比寿ガーデンテラス</h4>                 <div style="font-size: 11px; opacity: 0.9;">複合商業・住居（渋谷）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #2c5282;">A ランク <span style="font-size: 13px; font-weight: normal;">(81点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 19/35 点 <span style="color:#718096;">(準住居地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_8a8b9df9063b0d1f67b488633f453ffa.setContent(html_76e8007da49f9383cffe516a312c6403);
+            
+        
+
+        marker_e4385bba550b89d8ca7cb6cfcf10dfd0.bindPopup(popup_8a8b9df9063b0d1f67b488633f453ffa)
+        ;
+
+        
+    
+    
+            marker_e4385bba550b89d8ca7cb6cfcf10dfd0.bindTooltip(
+                `<div>
+                     恵比寿ガーデンテラス — Aランク (81点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e4385bba550b89d8ca7cb6cfcf10dfd0.setIcon(icon_2bd3f3f6bf92783b6e9696a8bd2d1d46);
+            
+    
+            feature_group_b0df1c7252522be01640a55f2e50688b.addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+        
+    
+            var feature_group_5266eb448a541c06e705607613e86a6d = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_d2570d344abc47f47a9a62102869ae89 = L.marker(
+                [35.66, 139.73],
+                {
+}
+            ).addTo(feature_group_5266eb448a541c06e705607613e86a6d);
+        
+    
+            var icon_93581efa261cd3bf0ee987a4e40e0862 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "building",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_09a5e268db0e826bb4e6e9fd1dcf0259 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_46c0d48bc659f50001e6a6b357ecd8e3 = $(`<div id="html_46c0d48bc659f50001e6a6b357ecd8e3" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #c05621; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">六本木ヒルズレジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">都心複合・商業（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #c05621;">B ランク <span style="font-size: 13px; font-weight: normal;">(72点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_09a5e268db0e826bb4e6e9fd1dcf0259.setContent(html_46c0d48bc659f50001e6a6b357ecd8e3);
+            
+        
+
+        marker_d2570d344abc47f47a9a62102869ae89.bindPopup(popup_09a5e268db0e826bb4e6e9fd1dcf0259)
+        ;
+
+        
+    
+    
+            marker_d2570d344abc47f47a9a62102869ae89.bindTooltip(
+                `<div>
+                     六本木ヒルズレジデンス — Bランク (72点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d2570d344abc47f47a9a62102869ae89.setIcon(icon_93581efa261cd3bf0ee987a4e40e0862);
+            
+    
+            var marker_fbba1a5823df7f77cb736d8550eda287 = L.marker(
+                [35.666, 139.731],
+                {
+}
+            ).addTo(feature_group_5266eb448a541c06e705607613e86a6d);
+        
+    
+            var icon_35b153585b81afe7767ca1ef10dd64a5 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "building",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8df771320d02a746fab8020b819df7dd = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_d9a38590b1eed953c8b629754e21decc = $(`<div id="html_d9a38590b1eed953c8b629754e21decc" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #c05621; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">東京ミッドタウンレジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">都心複合・商業（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #c05621;">B ランク <span style="font-size: 13px; font-weight: normal;">(72点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_8df771320d02a746fab8020b819df7dd.setContent(html_d9a38590b1eed953c8b629754e21decc);
+            
+        
+
+        marker_fbba1a5823df7f77cb736d8550eda287.bindPopup(popup_8df771320d02a746fab8020b819df7dd)
+        ;
+
+        
+    
+    
+            marker_fbba1a5823df7f77cb736d8550eda287.bindTooltip(
+                `<div>
+                     東京ミッドタウンレジデンス — Bランク (72点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_fbba1a5823df7f77cb736d8550eda287.setIcon(icon_35b153585b81afe7767ca1ef10dd64a5);
+            
+    
+            var marker_972883f3ac175cb5dd4bdca586e2c1b7 = L.marker(
+                [35.667, 139.749],
+                {
+}
+            ).addTo(feature_group_5266eb448a541c06e705607613e86a6d);
+        
+    
+            var icon_1399bfae5ba85dd677e19718c04bee35 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "building",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_ffe6e9d2032f1cf67f4a27770f20d6f0 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_6bcff54c4f14ce78c098ec7163730e8f = $(`<div id="html_6bcff54c4f14ce78c098ec7163730e8f" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #c05621; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">虎ノ門ヒルズレジデンシャル</h4>                 <div style="font-size: 11px; opacity: 0.9;">ビジネス中枢・商業（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #c05621;">B ランク <span style="font-size: 13px; font-weight: normal;">(72点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_ffe6e9d2032f1cf67f4a27770f20d6f0.setContent(html_6bcff54c4f14ce78c098ec7163730e8f);
+            
+        
+
+        marker_972883f3ac175cb5dd4bdca586e2c1b7.bindPopup(popup_ffe6e9d2032f1cf67f4a27770f20d6f0)
+        ;
+
+        
+    
+    
+            marker_972883f3ac175cb5dd4bdca586e2c1b7.bindTooltip(
+                `<div>
+                     虎ノ門ヒルズレジデンシャル — Bランク (72点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_972883f3ac175cb5dd4bdca586e2c1b7.setIcon(icon_1399bfae5ba85dd677e19718c04bee35);
+            
+    
+            var marker_ffefc36476307be7b8f6243e0ed6c830 = L.marker(
+                [35.671, 139.742],
+                {
+}
+            ).addTo(feature_group_5266eb448a541c06e705607613e86a6d);
+        
+    
+            var icon_f126fd2412d8b01680426b2bab7d7719 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "building",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_c54bd3701e02c59f088dee78e3a6c96b = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_fa5ca5e6afdb3357257d1ea8e2762d96 = $(`<div id="html_fa5ca5e6afdb3357257d1ea8e2762d96" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #c05621; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">赤坂インターシティAIR</h4>                 <div style="font-size: 11px; opacity: 0.9;">ビジネス中枢・商業（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #c05621;">B ランク <span style="font-size: 13px; font-weight: normal;">(72点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_c54bd3701e02c59f088dee78e3a6c96b.setContent(html_fa5ca5e6afdb3357257d1ea8e2762d96);
+            
+        
+
+        marker_ffefc36476307be7b8f6243e0ed6c830.bindPopup(popup_c54bd3701e02c59f088dee78e3a6c96b)
+        ;
+
+        
+    
+    
+            marker_ffefc36476307be7b8f6243e0ed6c830.bindTooltip(
+                `<div>
+                     赤坂インターシティAIR — Bランク (72点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_ffefc36476307be7b8f6243e0ed6c830.setIcon(icon_f126fd2412d8b01680426b2bab7d7719);
+            
+    
+            var marker_9c5c7ed6cbf1e17027bc3f72e8d925e7 = L.marker(
+                [35.656, 139.701],
+                {
+}
+            ).addTo(feature_group_5266eb448a541c06e705607613e86a6d);
+        
+    
+            var icon_54070d1ed57e4835d3312a1b0058b438 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "building",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0febb7e9a33a4e16bf04971f74b8e57d = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_fd02e2ec1f4bd89fba751c8968a6ab4c = $(`<div id="html_fd02e2ec1f4bd89fba751c8968a6ab4c" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #c05621; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">渋谷サクラステージ</h4>                 <div style="font-size: 11px; opacity: 0.9;">ターミナル至近・商業（渋谷）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #c05621;">B ランク <span style="font-size: 13px; font-weight: normal;">(72点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_0febb7e9a33a4e16bf04971f74b8e57d.setContent(html_fd02e2ec1f4bd89fba751c8968a6ab4c);
+            
+        
+
+        marker_9c5c7ed6cbf1e17027bc3f72e8d925e7.bindPopup(popup_0febb7e9a33a4e16bf04971f74b8e57d)
+        ;
+
+        
+    
+    
+            marker_9c5c7ed6cbf1e17027bc3f72e8d925e7.bindTooltip(
+                `<div>
+                     渋谷サクラステージ — Bランク (72点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_9c5c7ed6cbf1e17027bc3f72e8d925e7.setIcon(icon_54070d1ed57e4835d3312a1b0058b438);
+            
+    
+            var marker_0358d33abbdb9591067d69c1438e4613 = L.marker(
+                [35.67, 139.764],
+                {
+}
+            ).addTo(feature_group_5266eb448a541c06e705607613e86a6d);
+        
+    
+            var icon_db6cdf9a60d8a3e49986f9bb8f28adc2 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "building",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_eeaab54ac9621ee6757c9d0ffe3bf0ac = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_24903689008f5ad3e43d7d21aa13f50d = $(`<div id="html_24903689008f5ad3e43d7d21aa13f50d" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #c05621; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">銀座レジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">商業中心・商業（中央）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #c05621;">B ランク <span style="font-size: 13px; font-weight: normal;">(72点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 35/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0m (非浸水想定)</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_eeaab54ac9621ee6757c9d0ffe3bf0ac.setContent(html_24903689008f5ad3e43d7d21aa13f50d);
+            
+        
+
+        marker_0358d33abbdb9591067d69c1438e4613.bindPopup(popup_eeaab54ac9621ee6757c9d0ffe3bf0ac)
+        ;
+
+        
+    
+    
+            marker_0358d33abbdb9591067d69c1438e4613.bindTooltip(
+                `<div>
+                     銀座レジデンス — Bランク (72点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0358d33abbdb9591067d69c1438e4613.setIcon(icon_db6cdf9a60d8a3e49986f9bb8f28adc2);
+            
+    
+            feature_group_5266eb448a541c06e705607613e86a6d.addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+        
+    
+            var feature_group_9ab596459c63bf939fd6afd874c749ec = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_255ccb0b9d0435799a769d4ca2f2d7ed = L.marker(
+                [35.656, 139.771],
+                {
+}
+            ).addTo(feature_group_9ab596459c63bf939fd6afd874c749ec);
+        
+    
+            var icon_5773261334f897bca8b384aa25c129e4 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "gray",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_caad48067f84e1af6de92a0355578173 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_8485e848df5343a0c1e58951cb26cb93 = $(`<div id="html_8485e848df5343a0c1e58951cb26cb93" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #718096; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">勝どきザ・タワー</h4>                 <div style="font-size: 11px; opacity: 0.9;">湾岸・埋立地（中央）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #718096;">C ランク <span style="font-size: 13px; font-weight: normal;">(48点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 11/35 点 <span style="color:#718096;">(埋立地 / 液状化しやすい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0.5m〜3.0m想定</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_caad48067f84e1af6de92a0355578173.setContent(html_8485e848df5343a0c1e58951cb26cb93);
+            
+        
+
+        marker_255ccb0b9d0435799a769d4ca2f2d7ed.bindPopup(popup_caad48067f84e1af6de92a0355578173)
+        ;
+
+        
+    
+    
+            marker_255ccb0b9d0435799a769d4ca2f2d7ed.bindTooltip(
+                `<div>
+                     勝どきザ・タワー — Cランク (48点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_255ccb0b9d0435799a769d4ca2f2d7ed.setIcon(icon_5773261334f897bca8b384aa25c129e4);
+            
+    
+            var marker_6dfee18873eb957a7d984a1d91208a13 = L.marker(
+                [35.655, 139.782],
+                {
+}
+            ).addTo(feature_group_9ab596459c63bf939fd6afd874c749ec);
+        
+    
+            var icon_825c7f914afea13ef017fc43bed70863 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "gray",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_7ae0619a5add93304741fc4406eede9d = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_23b6ea1f04ad8b9050ce69dc8819f1f9 = $(`<div id="html_23b6ea1f04ad8b9050ce69dc8819f1f9" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #718096; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">パークタワー晴海</h4>                 <div style="font-size: 11px; opacity: 0.9;">湾岸・埋立地（中央）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #718096;">C ランク <span style="font-size: 13px; font-weight: normal;">(50点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 12/35 点 <span style="color:#718096;">(準工業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 11/35 点 <span style="color:#718096;">(埋立地 / 液状化しやすい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0.5m〜3.0m想定</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_7ae0619a5add93304741fc4406eede9d.setContent(html_23b6ea1f04ad8b9050ce69dc8819f1f9);
+            
+        
+
+        marker_6dfee18873eb957a7d984a1d91208a13.bindPopup(popup_7ae0619a5add93304741fc4406eede9d)
+        ;
+
+        
+    
+    
+            marker_6dfee18873eb957a7d984a1d91208a13.bindTooltip(
+                `<div>
+                     パークタワー晴海 — Cランク (50点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_6dfee18873eb957a7d984a1d91208a13.setIcon(icon_825c7f914afea13ef017fc43bed70863);
+            
+    
+            var marker_8c4bf8732af157d3a4127644ea6b5f71 = L.marker(
+                [35.656, 139.794],
+                {
+}
+            ).addTo(feature_group_9ab596459c63bf939fd6afd874c749ec);
+        
+    
+            var icon_9f5e14f90dc3ec50ad48fdffcc5a03cc = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "gray",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_bd8d5af79d54376cbcbabb916b29552c = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_6c1b42c618c71642a354c44d8cb48fd6 = $(`<div id="html_6c1b42c618c71642a354c44d8cb48fd6" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #718096; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">シティタワーズ豊洲</h4>                 <div style="font-size: 11px; opacity: 0.9;">湾岸・埋立地（江東）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #718096;">C ランク <span style="font-size: 13px; font-weight: normal;">(50点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 12/35 点 <span style="color:#718096;">(準工業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 11/35 点 <span style="color:#718096;">(埋立地 / 液状化しやすい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0.5m〜3.0m想定</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_bd8d5af79d54376cbcbabb916b29552c.setContent(html_6c1b42c618c71642a354c44d8cb48fd6);
+            
+        
+
+        marker_8c4bf8732af157d3a4127644ea6b5f71.bindPopup(popup_bd8d5af79d54376cbcbabb916b29552c)
+        ;
+
+        
+    
+    
+            marker_8c4bf8732af157d3a4127644ea6b5f71.bindTooltip(
+                `<div>
+                     シティタワーズ豊洲 — Cランク (50点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_8c4bf8732af157d3a4127644ea6b5f71.setIcon(icon_9f5e14f90dc3ec50ad48fdffcc5a03cc);
+            
+    
+            var marker_0548741343b65c406ffa95d28922309a = L.marker(
+                [35.655, 139.737],
+                {
+}
+            ).addTo(feature_group_9ab596459c63bf939fd6afd874c749ec);
+        
+    
+            var icon_ef0d113fd124fb01549d62c7fbb79e69 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "gray",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_27174066cc8b622a9cb49c6ae886963c = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_7ff314c7980a2afa0fb813b872525477 = $(`<div id="html_7ff314c7980a2afa0fb813b872525477" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #718096; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">麻布十番駅前レジデンス</h4>                 <div style="font-size: 11px; opacity: 0.9;">谷底低地・商業（港）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #718096;">C ランク <span style="font-size: 13px; font-weight: normal;">(56点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 14/35 点 <span style="color:#718096;">(近隣商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 15/35 点 <span style="color:#718096;">(氾濫平野・低地 / 液状化傾向あり)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0.5m〜3.0m想定</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_27174066cc8b622a9cb49c6ae886963c.setContent(html_7ff314c7980a2afa0fb813b872525477);
+            
+        
+
+        marker_0548741343b65c406ffa95d28922309a.bindPopup(popup_27174066cc8b622a9cb49c6ae886963c)
+        ;
+
+        
+    
+    
+            marker_0548741343b65c406ffa95d28922309a.bindTooltip(
+                `<div>
+                     麻布十番駅前レジデンス — Cランク (56点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0548741343b65c406ffa95d28922309a.setIcon(icon_ef0d113fd124fb01549d62c7fbb79e69);
+            
+    
+            var marker_519cfd5a3723387d35068710b88f2f2c = L.marker(
+                [35.644, 139.699],
+                {
+}
+            ).addTo(feature_group_9ab596459c63bf939fd6afd874c749ec);
+        
+    
+            var icon_9c481a9d375f3aff8502739d84a85830 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "gray",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_ac8885d03597e131c204ccbcebbf642a = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_f4ad03e78525a6a656926f584cebcaec = $(`<div id="html_f4ad03e78525a6a656926f584cebcaec" style="width: 100.0%; height: 100.0%;">         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; width: 280px; padding: 4px; color: #2d3748;">             <div style="background-color: #718096; color: #ffffff; padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px;">                 <h4 style="margin: 0; font-size: 14px; font-weight: 600;">中目黒アトラスタワー</h4>                 <div style="font-size: 11px; opacity: 0.9;">河川近接・商業（目黒）</div>             </div>             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 4px;">                 <span style="font-size: 12px; color: #718096;">Sorai Index 総合評価</span>                 <span style="font-size: 18px; font-weight: bold; color: #718096;">C ランク <span style="font-size: 13px; font-weight: normal;">(60点)</span></span>             </div>             <div style="font-size: 11px; line-height: 1.6;">                 <div><b>🌿 静粛性:</b> 10/35 点 <span style="color:#718096;">(商業地域)</span></div>                 <div><b>🛡️ 防災地盤:</b> 23/35 点 <span style="color:#718096;">(ローム台地 / 液状化しにくい)</span></div>                 <div><b>🌊 浸水想定:</b> <span style="color:#e53e3e;" if "想定" in r['flood'] else "color:#319795;">0.5m〜3.0m想定</span></div>             </div>             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e0; font-size: 10px; color: #a0aec0; text-align: right;">                 Sorai Tokyo × 国土交通省 一次データ             </div>         </div>         </div>`)[0];
+                popup_ac8885d03597e131c204ccbcebbf642a.setContent(html_f4ad03e78525a6a656926f584cebcaec);
+            
+        
+
+        marker_519cfd5a3723387d35068710b88f2f2c.bindPopup(popup_ac8885d03597e131c204ccbcebbf642a)
+        ;
+
+        
+    
+    
+            marker_519cfd5a3723387d35068710b88f2f2c.bindTooltip(
+                `<div>
+                     中目黒アトラスタワー — Cランク (60点)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_519cfd5a3723387d35068710b88f2f2c.setIcon(icon_9c481a9d375f3aff8502739d84a85830);
+            
+    
+            feature_group_9ab596459c63bf939fd6afd874c749ec.addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+        
+    
+            var layer_control_ebab61877791d87ea27b8c3f9daaeb9b_layers = {
+                base_layers : {
+                    "openstreetmap" : tile_layer_060a332a0b1527f3860eaaff1b33fc0b,
+                },
+                overlays :  {
+                    "\u2b50 S\u30e9\u30f3\u30af\uff08\u9ad8\u53f0\u30fb\u9759\u7c9b\uff09" : feature_group_fe13b4a1a7674942092c0b409070c37a,
+                    "\ud83c\udfe0 A\u30e9\u30f3\u30af\uff08\u826f\u597d\u4f4f\u74b0\u5883\uff09" : feature_group_b0df1c7252522be01640a55f2e50688b,
+                    "\ud83c\udfe2 B\u30e9\u30f3\u30af\uff08\u5546\u696d\u30fb\u5229\u4fbf\u6027\u512a\u5148\uff09" : feature_group_5266eb448a541c06e705607613e86a6d,
+                    "\ud83c\udf0a C\u30e9\u30f3\u30af\uff08\u6e7e\u5cb8\u30fb\u4f4e\u5730\u30a8\u30ea\u30a2\uff09" : feature_group_9ab596459c63bf939fd6afd874c749ec,
+                },
+            };
+            let layer_control_ebab61877791d87ea27b8c3f9daaeb9b = L.control.layers(
+                layer_control_ebab61877791d87ea27b8c3f9daaeb9b_layers.base_layers,
+                layer_control_ebab61877791d87ea27b8c3f9daaeb9b_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": false,
+  "autoZIndex": true,
+}
+            ).addTo(map_23037d6c5fcdc55160373a187b23bbc6);
+
+        
+</script>
+</html>

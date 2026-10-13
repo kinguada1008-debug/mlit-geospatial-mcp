@@ -26,6 +26,37 @@ logger = logging.getLogger(__name__)
 server = Server("mlit-geospatial-mcp")
 
 
+LOOKUP_TOKYO_SPATIAL_TOOL = types.Tool(
+    name="lookup_tokyo_spatial",
+    description=(
+        "【超高速ローカル空間検索】外部API通信ゼロ（所要時間1〜3ミリ秒）。\n"
+        "東京都の指定座標 (lat, lon) から、物件カルテ・SORAI診断レポートに必要な公的オープンデータ全7系統を一撃で判定して即答します。\n"
+        "1. 用途地域（建蔽率・容積率）\n"
+        "2. 地価公示標準地価格（最新相場・駅距離）\n"
+        "3. 小学校区・中学校区（学校名・所在地・自治体）\n"
+        "4. 洪水浸水想定区域（最大浸水深ランク・河川名）\n"
+        "5. 土砂災害警戒区域（急傾斜等・イエロー/レッド区域判定）\n"
+        "6. 近傍医療機関（半径1.2km・標榜科目・救急指定）\n"
+        "7. 近傍保育施設（半径1.0km）\n"
+        "※境界線上や複数用途地域にまたがる場合は ambiguous として複数候補を安全に返却します。"
+    ),
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "lat": {
+                "type": "number",
+                "description": "対象地点の緯度（10進法、小数。例: 35.662846）",
+            },
+            "lon": {
+                "type": "number",
+                "description": "対象地点の経度（10進法、小数。例: 139.718817）",
+            },
+        },
+        "required": ["lat", "lon"],
+    },
+)
+
+
 @server.list_tools()
 async def handle_list_tools():
     """
@@ -34,26 +65,37 @@ async def handle_list_tools():
     Returns:
         TOOLS:ツール定義のリスト
     """
-    return TOOLS
+    return [LOOKUP_TOKYO_SPATIAL_TOOL] + TOOLS
 
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
     """
-    Claudから呼び出されたtoolを実行する。
-    tool名からAPI_SPECを取得し、引数をAPI用のpayloadに変換後、
-    handle_request（内部処理）に渡す。
-    結果をJSONとして返却。
-
-    Args:
-        name(str):呼び出されたtool名
-        arguments(dict):toolに渡された引数
-
-    Returns:
-        list[TextContent]: 実行結果（JSON文字列）
+    MCPから呼び出されたtoolを実行する。
     """
     rid = uuid.uuid4().hex
     logger.info(f"Tool called: {name} (request_id: {rid})")
+
+    if name == "lookup_tokyo_spatial":
+        try:
+            from spatial_query import TokyoSpatialDB
+        except ImportError:
+            from src.spatial_query import TokyoSpatialDB
+
+        lat = float(arguments["lat"])
+        lon = float(arguments["lon"])
+        db = TokyoSpatialDB()
+        try:
+            result = db.lookup_carte_7layers(lat, lon)
+        finally:
+            db.close()
+
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(result, ensure_ascii=False, indent=2),
+            )
+        ]
 
     spec = API_SPECS[name]
     payload = build_payload(

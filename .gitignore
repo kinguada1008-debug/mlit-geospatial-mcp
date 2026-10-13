@@ -208,3 +208,10 @@ __marimo__/
 
 # Vector cache
 .vector_cache/
+
+# Spatial DB
+data/*.sqlite
+data/*.sqlite-journal
+data/*.zip
+data/raw/
+data/work/
