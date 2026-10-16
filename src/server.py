@@ -1,6 +1,8 @@
 import json
 import logging
+import sys
 import uuid
+from typing import Any, TYPE_CHECKING
 
 """
 MCPサーバーのエントリポイント。
@@ -14,9 +16,18 @@ from mcp.server.lowlevel import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 
-from request_processor.handler import handle_request
+if TYPE_CHECKING:
+    from request_processor.handler import handle_request
 from tools import API_SPECS, TOOLS
 from utils.payload import build_payload
+
+
+def __getattr__(name: str) -> Any:
+    if name == "handle_request":
+        from request_processor.handler import handle_request as _hr
+        globals()["handle_request"] = _hr
+        return _hr
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # ロガー設定
 logging.basicConfig(level=logging.INFO)
@@ -111,7 +122,8 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
         args=arguments,
     )
     logger.info(f"payload:{payload}")
-    result = await handle_request(payload)
+    handler = getattr(sys.modules[__name__], "handle_request")
+    result = await handler(payload)
     return [
         types.TextContent(
             type="text",
