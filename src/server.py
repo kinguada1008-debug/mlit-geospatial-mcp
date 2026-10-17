@@ -1,13 +1,19 @@
-import json
-import logging
-import sys
-import uuid
-from typing import Any, TYPE_CHECKING
-
 """
 MCPサーバーのエントリポイント。
 ツールのリスト取得やツール呼び出しのハンドラを提供する。
 """
+
+import json
+import logging
+import sys
+import uuid
+from pathlib import Path
+from typing import Any, TYPE_CHECKING
+
+# Ensure src directory is in sys.path for local module resolution
+_SRC_DIR = str(Path(__file__).resolve().parent)
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
 
 
 import anyio
@@ -92,10 +98,7 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
     logger.info(f"Tool called: {name} (request_id: {rid})")
 
     if name == "lookup_tokyo_spatial":
-        try:
-            from spatial_query import TokyoSpatialDB
-        except ImportError:
-            from src.spatial_query import TokyoSpatialDB
+        from spatial_query import TokyoSpatialDB
 
         lat = float(arguments["lat"])
         lon = float(arguments["lon"])
