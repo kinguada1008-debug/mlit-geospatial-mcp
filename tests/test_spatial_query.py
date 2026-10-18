@@ -465,6 +465,128 @@ class TestTokyoSpatialDB(unittest.TestCase):
             600,
         )
 
+    @unittest.skipUnless(DB_PATH.exists(), "tokyo_spatial.sqlite が存在しない場合はスキップ")
+    def test_lookup_station_or_address_ranking(self):
+        import json
+        import re
+        from src.spatial_query import normalize_location_query, extract_chome_label
+
+        # 1. ヘルパー関数単体テスト
+        self.assertEqual(
+            normalize_location_query("東京都　渋谷区恵比寿３丁目２８番２６外"),
+            "渋谷区恵比寿3丁目28番26",
+        )
+        self.assertEqual(
+            extract_chome_label("東京都　渋谷区恵比寿３丁目２８番２６外"),
+            "渋谷区恵比寿3丁目",
+        )
+        self.assertEqual(
+            extract_chome_label("東京都　足立区千住旭町６６番１７"),
+            "足立区千住旭町",
+        )
+        self.assertEqual(normalize_location_query("恵比寿駅"), "恵比寿")
+        self.assertEqual(normalize_location_query(""), "")
+        self.assertEqual(normalize_location_query(None), "")
+
+        db = TokyoSpatialDB(DB_PATH)
+        try:
+            # 2. 駅名完全一致検索（恵比寿駅）
+            res_ebisu = db.lookup_station_or_address_ranking("恵比寿", limit=8)
+            self.assertEqual(res_ebisu["status"], "ok")
+            self.assertEqual(res_ebisu["area_summary"]["area_label"], "恵比寿駅")
+            self.assertGreater(res_ebisu["point_count"], 0)
+            self.assertLessEqual(len(res_ebisu["ranked_locations"]), 8)
+
+            # ソート順降順の検証
+            scores = [loc["sorai_index"]["total_score"] for loc in res_ebisu["ranked_locations"]]
+            self.assertEqual(scores, sorted(scores, reverse=True))
+
+            # area_summary 整合性
+            self.assertEqual(res_ebisu["area_summary"]["max_score"], scores[0])
+            self.assertEqual(res_ebisu["area_summary"]["min_score"], scores[-1])
+            self.assertEqual(
+                res_ebisu["area_summary"]["score_spread"],
+                scores[0] - scores[-1],
+            )
+            self.assertEqual(
+                res_ebisu["area_summary"]["best_chome"],
+                res_ebisu["ranked_locations"][0]["chome_label"],
+            )
+
+            # cvr_cta 整合性
+            cvr = res_ebisu["cvr_cta"]
+            self.assertIn("恵比寿駅", cvr["primary_button_label"])
+            self.assertIn(res_ebisu["area_summary"]["best_chome"], cvr["headline"])
+            self.assertIn("LINE", cvr["secondary_button_label"])
+
+            # 3. 駅名検索（中野駅）
+            res_nakano = db.lookup_station_or_address_ranking("中野駅", limit=8)
+            self.assertEqual(res_nakano["status"], "ok")
+            self.assertEqual(res_nakano["area_summary"]["area_label"], "中野駅")
+            self.assertGreater(res_nakano["point_count"], 0)
+
+            # 4. 住所検索（渋谷区恵比寿3丁目）
+            res_addr = db.lookup_station_or_address_ranking("渋谷区恵比寿3丁目", limit=5)
+            self.assertEqual(res_addr["status"], "ok")
+            self.assertEqual(res_addr["area_summary"]["area_label"], "渋谷区恵比寿3丁目")
+            self.assertGreater(res_addr["point_count"], 0)
+            self.assertIn("渋谷区恵比寿3丁目", res_addr["ranked_locations"][0]["address"])
+
+            # 全角混じり住所検索
+            res_addr_full = db.lookup_station_or_address_ranking("東京都　渋谷区恵比寿３丁目２８番２６外", limit=5)
+            self.assertEqual(res_addr_full["status"], "ok")
+            self.assertGreater(res_addr_full["point_count"], 0)
+
+            # 5. Fail-Closed 動作検証
+            # 空クエリ
+            res_empty = db.lookup_station_or_address_ranking("")
+            self.assertEqual(res_empty["status"], "invalid_query")
+            self.assertEqual(res_empty["point_count"], 0)
+            self.assertEqual(res_empty["ranked_locations"], [])
+            self.assertIsNone(res_empty["area_summary"])
+
+            res_spaces = db.lookup_station_or_address_ranking("   ")
+            self.assertEqual(res_spaces["status"], "invalid_query")
+
+            res_none = db.lookup_station_or_address_ranking(None)
+            self.assertEqual(res_none["status"], "invalid_query")
+
+            # 存在しない駅・住所
+            res_nomatch = db.lookup_station_or_address_ranking("架空の存在しない駅名99999")
+            self.assertEqual(res_nomatch["status"], "no_match")
+            self.assertEqual(res_nomatch["point_count"], 0)
+            self.assertEqual(res_nomatch["ranked_locations"], [])
+
+            # 6. 絵文字ゼロ・終助詞ゼロ検証
+            emoji_pattern = re.compile(
+                r"[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]"
+            )
+            casual_endings = re.compile(r"(ですね|ですよ|のですね)")
+
+            for res_obj in (res_ebisu, res_nakano, res_addr):
+                serialized = json.dumps(res_obj, ensure_ascii=False)
+                self.assertIsNone(
+                    emoji_pattern.search(serialized),
+                    f"Emoji detected in ranking output: {serialized}",
+                )
+                self.assertIsNone(
+                    casual_endings.search(serialized),
+                    f"Casual ending detected in ranking output: {serialized}",
+                )
+        finally:
+            db.close()
+
+        # 7. 未ロードDBでのFail-Closed検証
+        empty_db = TokyoSpatialDB(":memory:")
+        try:
+            res_not_loaded = empty_db.lookup_station_or_address_ranking("恵比寿")
+            self.assertEqual(res_not_loaded["status"], "not_loaded")
+            self.assertEqual(res_not_loaded["point_count"], 0)
+            self.assertEqual(res_not_loaded["ranked_locations"], [])
+            self.assertIsNone(res_not_loaded["area_summary"])
+        finally:
+            empty_db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

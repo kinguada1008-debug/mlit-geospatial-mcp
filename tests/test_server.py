@@ -71,6 +71,32 @@ sys.exit(0)
             self.assertIs(server.handle_request, mock_hr)
             mock_hr.return_value = {"status": "mocked"}
 
+    async def _test_server_ranking_tool(self):
+        """
+        Verify that handle_list_tools includes lookup_station_or_address_ranking
+        and handle_call_tool executes it correctly.
+        """
+        import json
+        tools = await server.handle_list_tools()
+        names = [t.name for t in tools]
+        self.assertIn("lookup_station_or_address_ranking", names)
+        self.assertIn("lookup_tokyo_spatial", names)
+
+        # Call with query
+        res = await server.handle_call_tool(
+            "lookup_station_or_address_ranking",
+            {"query": "恵比寿", "limit": 3},
+        )
+        self.assertEqual(len(res), 1)
+        data = json.loads(res[0].text)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["area_summary"]["area_label"], "恵比寿駅")
+        self.assertLessEqual(len(data["ranked_locations"]), 3)
+
+    def test_server_ranking_tool_runner(self):
+        import asyncio
+        asyncio.run(self._test_server_ranking_tool())
+
 
 if __name__ == "__main__":
     unittest.main()

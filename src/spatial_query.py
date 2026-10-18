@@ -6,7 +6,9 @@ SORAI 診断レポート用: 公的オープンデータ 7系統一撃即答ク�
 
 import json
 import math
+import re
 import sqlite3
+import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from shapely import wkb
@@ -79,6 +81,51 @@ def _coastal_depth_sort_key(item: Dict[str, Any]) -> Tuple[int, float, float, st
     if d_max is None and d_min is not None:
         return (2, d_min, d_min, raw)
     return (1, d_max if d_max is not None else (d_min or 0.0), d_min if d_min is not None else 0.0, raw)
+
+
+def normalize_location_query(query: str) -> str:
+    """
+    駅名・住所クエリの表記揺れを吸収し、正規化文字列を返却する。
+    - 全角英数字・全角スペース・ハイフン類を正規化
+    - 先頭の「東京都」を除去
+    - 末尾の「外」を除去
+    - 末尾の「駅」を除去
+    """
+    if not isinstance(query, str):
+        return ""
+    q = unicodedata.normalize("NFKC", query).strip()
+    if not q:
+        return ""
+    q = re.sub(r"\s+", "", q)
+    q = re.sub(r"[−―‐－~〜]", "-", q)
+    q = re.sub(r"^東京都", "", q)
+    q = re.sub(r"外$", "", q)
+    if q.endswith("駅"):
+        q = q[:-1]
+    return q.strip()
+
+
+def extract_chome_label(address: str) -> str:
+    """
+    住所文字列から町丁目ラベル（例: '渋谷区恵比寿3丁目', '足立区千住旭町'）を抽出する。
+    """
+    if not isinstance(address, str):
+        return ""
+    clean = normalize_location_query(address)
+    if not clean:
+        return ""
+
+    # 1. 丁目パターン（例: "渋谷区恵比寿3丁目"）
+    m_chome = re.search(r"^(.+?(?:\d+|[一二三四五六七八九十]+)丁目)", clean)
+    if m_chome:
+        return m_chome.group(1)
+
+    # 2. 丁目がない場合: 番地表記（例: "66番17", "16番3", "3番27", "1-2"）の前までを抽出
+    m_ban = re.search(r"^(.+?)(?:\d+番地|\d+番|\d+-\d+|\d+$)", clean)
+    if m_ban:
+        return m_ban.group(1)
+
+    return clean
 
 
 class TokyoSpatialDB:
@@ -261,6 +308,244 @@ class TokyoSpatialDB:
         """
         carte = self.lookup_comprehensive_13layers(lat, lon)
         return carte["sorai_index"]
+
+    def lookup_station_or_address_ranking(
+        self, query: str, limit: int = 12
+    ) -> Dict[str, Any]:
+        """
+        空間データ・Sorai Index を用いた「SorAi 番地・駅 1秒格付け（アドレス診断）」検索・格付けエンジン。
+        - 外部API通信 0回（ローカル空間DBキャッシュのみ利用）
+        - 最大25地点キャップ（Fail-Closed）
+        """
+        if not isinstance(query, str) or not query.strip():
+            return {
+                "status": "invalid_query",
+                "query": "",
+                "point_count": 0,
+                "ranked_locations": [],
+                "area_summary": None,
+                "cvr_cta": None,
+            }
+
+        clean_q = normalize_location_query(query)
+        if not clean_q:
+            return {
+                "status": "invalid_query",
+                "query": "",
+                "point_count": 0,
+                "ranked_locations": [],
+                "area_summary": None,
+                "cvr_cta": None,
+            }
+
+        if not self._is_table_ready("land_price"):
+            return {
+                "status": "not_loaded",
+                "query": clean_q,
+                "point_count": 0,
+                "ranked_locations": [],
+                "area_summary": None,
+                "cvr_cta": None,
+            }
+
+        cur = self.conn.cursor()
+        matched_station: Optional[str] = None
+        matched_rows: List[sqlite3.Row] = []
+
+        # ① まず station_name = ?（正規化後の駅名）で完全一致検索（最大25件にキャップ）
+        try:
+            cur.execute("""
+            SELECT id, price, change_rate, address, station_name, station_distance, lat, lon
+            FROM land_price
+            WHERE station_name = ?
+            LIMIT 25
+            """, (clean_q,))
+            exact_rows = cur.fetchall()
+            if exact_rows:
+                matched_station = clean_q
+                matched_rows = exact_rows
+        except sqlite3.OperationalError:
+            return {
+                "status": "not_loaded",
+                "query": clean_q,
+                "point_count": 0,
+                "ranked_locations": [],
+                "area_summary": None,
+                "cvr_cta": None,
+            }
+
+        # ② 0件の場合は station_name LIKE ? または正規化済み address にクエリ文字列が含まれる行を検索
+        if not matched_rows:
+            try:
+                cur.execute("""
+                SELECT id, price, change_rate, address, station_name, station_distance, lat, lon
+                FROM land_price
+                """)
+                all_rows = cur.fetchall()
+                partial_candidates = []
+                for r in all_rows:
+                    st_name = str(r["station_name"] or "")
+                    norm_addr = normalize_location_query(str(r["address"] or ""))
+                    if clean_q in st_name or clean_q in norm_addr:
+                        partial_candidates.append(r)
+                        if len(partial_candidates) >= 25:
+                            break
+                matched_rows = partial_candidates
+            except sqlite3.OperationalError:
+                return {
+                    "status": "not_loaded",
+                    "query": clean_q,
+                    "point_count": 0,
+                    "ranked_locations": [],
+                    "area_summary": None,
+                    "cvr_cta": None,
+                }
+
+        # ③ それでも0件の場合は no_match を返却
+        if not matched_rows:
+            return {
+                "status": "no_match",
+                "query": clean_q,
+                "point_count": 0,
+                "ranked_locations": [],
+                "area_summary": None,
+                "cvr_cta": None,
+            }
+
+        # ヒットした行（最大25件にキャップ）に対して evaluate_sorai_index を実行
+        items: List[Dict[str, Any]] = []
+        for r in matched_rows[:25]:
+            lat_val = _safe_finite_float(r["lat"])
+            lon_val = _safe_finite_float(r["lon"])
+            if lat_val is None or lon_val is None:
+                continue
+            norm_addr = normalize_location_query(str(r["address"] or ""))
+            chome = extract_chome_label(norm_addr)
+            dist_m = _finite_int(r["station_distance"], min_val=1, max_val=100_000)
+            walk_min = max(1, math.ceil(dist_m / 80)) if dist_m is not None else None
+
+            price = _finite_int(r["price"], min_val=1, max_val=500_000_000)
+            change_rate = _finite_float_bounded(r["change_rate"], min_val=-100.0, max_val=1000.0)
+            sorai_idx = self.evaluate_sorai_index(lat_val, lon_val)
+
+            svi = sorai_idx.get("signature_indices", {}).get("silent_value_index", {})
+            category = str(svi.get("category") or "")
+            total_score = int(sorai_idx.get("total_score", 0))
+            is_hidden_gem = bool(total_score >= 78 and "隠れ静寂立地" in category)
+
+            items.append({
+                "address": norm_addr,
+                "chome_label": chome,
+                "station_name": r["station_name"],
+                "station_distance_m": dist_m,
+                "walk_minutes": walk_min,
+                "price_yen_per_sqm": price,
+                "change_rate_percent": change_rate,
+                "lat": lat_val,
+                "lon": lon_val,
+                "sorai_index": sorai_idx,
+                "is_hidden_gem": is_hidden_gem,
+            })
+
+        if not items:
+            return {
+                "status": "no_match",
+                "query": clean_q,
+                "point_count": 0,
+                "ranked_locations": [],
+                "area_summary": None,
+                "cvr_cta": None,
+            }
+
+        # ソート順: (total_score, env_protection_rate, -(price or 999999999)) の降順
+        def _ranking_sort_key(item: Dict[str, Any]) -> Tuple[float, float, float]:
+            score = float(item["sorai_index"].get("total_score", 0))
+            svi = item["sorai_index"].get("signature_indices", {}).get("silent_value_index", {})
+            env_rate = float(svi.get("env_protection_rate", 0.0))
+            p = item.get("price_yen_per_sqm")
+            neg_price = -(p if p is not None else 999999999)
+            return (score, env_rate, neg_price)
+
+        items.sort(key=_ranking_sort_key, reverse=True)
+        clamped_limit = max(1, min(20, _finite_int(limit, min_val=1, max_val=20) or 12))
+        ranked_locations = items[:clamped_limit]
+
+        # area_summary 構築（駅・エリア全体の全評価地点 items から最大・最小・格差を算出）
+        area_label = f"{matched_station}駅" if matched_station else clean_q
+        best = items[0]
+        worst = items[-1]
+        max_score = int(best["sorai_index"]["total_score"])
+        min_score = int(worst["sorai_index"]["total_score"])
+        score_spread = max_score - min_score
+        avg_score = round(sum(loc["sorai_index"]["total_score"] for loc in items) / len(items), 1)
+        best_chome = best["chome_label"]
+        best_rank = best["sorai_index"]["rank"]
+        lowest_chome = worst["chome_label"]
+        lowest_rank = worst["sorai_index"]["rank"]
+        hidden_gem_count = sum(1 for loc in items if loc["is_hidden_gem"])
+
+        if score_spread >= 12 and len(items) >= 2:
+            spread_insight = (
+                f"同じ{area_label}周辺でも、「{best_chome}」（{max_score}点・{best_rank}ランク）と"
+                f"「{lowest_chome}」（{min_score}点・{lowest_rank}ランク）では"
+                f"用途地域や地形区分により最大{score_spread}点のスコア差が生じています。"
+                f"物件選定時は駅徒歩分数だけでなく、番地単位での住環境・地盤照合が効果的です。"
+            )
+        else:
+            spread_insight = (
+                f"{area_label}周辺の標準地評価は最高{max_score}点（{best_chome}）・平均{avg_score}点と推移しています。"
+                f"番地ごとの用途地域と微地形を確認することで、より静粛性の高い住戸を選択できます。"
+            )
+
+        area_summary = {
+            "area_label": area_label,
+            "evaluated_count": len(items),
+            "max_score": max_score,
+            "min_score": min_score,
+            "score_spread": score_spread,
+            "average_score": avg_score,
+            "best_chome": best_chome,
+            "best_rank": best_rank,
+            "lowest_chome": lowest_chome,
+            "lowest_rank": lowest_rank,
+            "hidden_gem_count": hidden_gem_count,
+            "spread_insight": spread_insight,
+        }
+
+        # cvr_cta 構築
+        seen_chomes = set()
+        top_chomes = []
+        for loc in ranked_locations:
+            c = loc["chome_label"]
+            if c and c not in seen_chomes:
+                seen_chomes.add(c)
+                top_chomes.append(c)
+                if len(top_chomes) >= 3:
+                    break
+
+        headline = f"「{best['chome_label']}」など上位ランク番地に絞って部屋を探す"
+        description = "一般的なポータルサイトでは絞り込めない「用途地域・地盤・静寂単価効率」の上位番地に限定し、適正初期費用の空室・未公開物件をご案内します。"
+        primary_button_label = f"{area_label}の上位番地（{best['sorai_index']['rank']}ランク）の空室をLINEで確認する"
+        secondary_button_label = "この番地格付けカルテと内見チェックリストをLINEに保存する"
+        request_query_params = f"?area={area_label}&chome={best['chome_label']}&sorai_score={max_score}&sorai_rank={best['sorai_index']['rank']}"
+
+        cvr_cta = {
+            "top_chomes": top_chomes,
+            "headline": headline,
+            "description": description,
+            "primary_button_label": primary_button_label,
+            "secondary_button_label": secondary_button_label,
+            "request_query_params": request_query_params,
+        }
+
+        return {
+            "status": "ok",
+            "query": clean_q,
+            "point_count": len(ranked_locations),
+            "ranked_locations": ranked_locations,
+            "area_summary": area_summary,
+            "cvr_cta": cvr_cta,
+        }
 
     def _lookup_fire_prevention(
         self, pt: Point, lat: float, lon: float, city_code: Optional[str] = None

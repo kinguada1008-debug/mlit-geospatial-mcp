@@ -78,6 +78,34 @@ LOOKUP_TOKYO_SPATIAL_TOOL = types.Tool(
     },
 )
 
+LOOKUP_STATION_ADDRESS_RANKING_TOOL = types.Tool(
+    name="lookup_station_or_address_ranking",
+    description=(
+        "【SorAi 番地・駅 1秒格付け（アドレス診断）】外部API通信ゼロ（所要時間2〜8ミリ秒）。\n"
+        "東京都内の駅名（例: 「恵比寿」「中野」）または住所（例: 「渋谷区恵比寿3丁目」）から、"
+        "周辺の地価公示標準地・番地ごとの住環境・地盤・静寂単価効率を13レイヤー空間DBで即時診断し、"
+        "100点満点総合スコア（Sorai Index）降順で格付けランキングとエリア要約・推奨番地を出力します。\n"
+        "・同じ駅周辺でも用途地域や微地形により生じるスコア差を可視化\n"
+        "・隠れ静寂立地（高住環境×適正公示地価水準）の自動判定\n"
+        "・上限25地点キャップ（Fail-Closed防護）"
+    ),
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "検索対象の駅名または住所（例: '恵比寿', '中野', '渋谷区恵比寿3丁目'）。全角・半角・先頭の『東京都』・末尾の『駅』は自動正規化されます。",
+            },
+            "limit": {
+                "type": "integer",
+                "description": "返却する上位番地ランキング件数（デフォルト: 12、最小: 1、最大: 20）。",
+                "default": 12,
+            },
+        },
+        "required": ["query"],
+    },
+)
+
 
 @server.list_tools()
 async def handle_list_tools():
@@ -87,7 +115,7 @@ async def handle_list_tools():
     Returns:
         TOOLS:ツール定義のリスト
     """
-    return [LOOKUP_TOKYO_SPATIAL_TOOL] + TOOLS
+    return [LOOKUP_TOKYO_SPATIAL_TOOL, LOOKUP_STATION_ADDRESS_RANKING_TOOL] + TOOLS
 
 
 @server.call_tool()
@@ -110,6 +138,24 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
                 result = db.lookup_comprehensive_13layers(lat, lon)
             else:
                 result = db.lookup_carte_7layers(lat, lon)
+        finally:
+            db.close()
+
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(result, ensure_ascii=False, indent=2),
+            )
+        ]
+
+    if name == "lookup_station_or_address_ranking":
+        from spatial_query import TokyoSpatialDB
+
+        query = str(arguments.get("query", ""))
+        limit = int(arguments.get("limit", 12)) if arguments.get("limit") is not None else 12
+        db = TokyoSpatialDB()
+        try:
+            result = db.lookup_station_or_address_ranking(query, limit=limit)
         finally:
             db.close()
 
