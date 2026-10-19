@@ -1,6 +1,6 @@
 """
 build_tokyo_spatial_db.py
-SORAI 診断レポート用: 東京都の公的オープンデータ（全7系統）を一括取得し、
+SorAi 物件診断用: 東京都の公的オープンデータ（全7系統）を一括取得し、
 R*Tree空間インデックス付きの SQLite データベース (tokyo_spatial.sqlite) を構築するスクリプト。
 
 【収録レイヤー】
@@ -1192,7 +1192,7 @@ def main():
 
             if args.append_6layers and out_path.exists():
                 print("==================================================")
-                print("🚀 SORAI 診断レポート用 東京都空間DB (追加6系統 ➔ 全13系統) アトミック統合ビルド開始")
+                print("🚀 SorAi 物件診断用 東京都空間DB (追加6系統 ➔ 全13系統) アトミック統合ビルド開始")
                 print(f"📦 対象DB: {out_path.resolve()}")
                 print("==================================================")
                 conn = sqlite3.connect(str(tmp_path))
@@ -1220,7 +1220,7 @@ def main():
                 return
 
             print("==================================================")
-            print("🚀 SORAI 診断レポート用 東京都空間DB (全13系統) フルビルド開始")
+            print("🚀 SorAi 物件診断用 東京都空間DB (全13系統) フルビルド開始")
             print(f"📦 出力先: {out_path.resolve()}")
             print("==================================================")
 

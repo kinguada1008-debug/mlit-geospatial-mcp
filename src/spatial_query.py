@@ -1,6 +1,6 @@
 """
 src/spatial_query.py
-SORAI 診断レポート用: 公的オープンデータ 7系統一撃即答クエリエンジン。
+SorAi 物件診断用: 公的オープンデータ 7系統一撃即答クエリエンジン。
 外部API通信 0回、所要時間 2〜5ms。
 """
 
@@ -233,7 +233,7 @@ class TokyoSpatialDB:
 
     def lookup_carte_7layers(self, lat: float, lon: float) -> Dict[str, Any]:
         """
-        SORAI 診断レポート（物件カルテ）に必要な公的 7系統のデータを一撃で即答する。
+        SorAi 物件診断（物件カルテ）に必要な公的 7系統のデータを一撃で即答する。
         所要時間: 2〜5ms（外部API通信 0回）
         """
         pt = Point(lon, lat)
