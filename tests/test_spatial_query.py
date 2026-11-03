@@ -715,6 +715,74 @@ class TestTokyoSpatialDB(unittest.TestCase):
         finally:
             db.close()
 
+    def test_is_tokyo_city_identifier_boundaries(self):
+        # 東京都内と判定されるべき識別子
+        self.assertTrue(TokyoSpatialDB._is_tokyo_city_identifier("東京都世田谷区"))
+        self.assertTrue(TokyoSpatialDB._is_tokyo_city_identifier("世田谷区"))
+        self.assertTrue(TokyoSpatialDB._is_tokyo_city_identifier("13112"))
+        self.assertTrue(TokyoSpatialDB._is_tokyo_city_identifier("13"))
+        self.assertTrue(TokyoSpatialDB._is_tokyo_city_identifier("東京都"))
+        self.assertTrue(TokyoSpatialDB._is_tokyo_city_identifier("131121"))
+
+        # 東京都外・不正形式として除外されるべき識別子
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier("東京都松戸市"))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier("東京都外"))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier("1300045"))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier("12207"))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier("松戸市"))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier(""))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier(None))
+        self.assertFalse(TokyoSpatialDB._is_tokyo_city_identifier("13abc"))
+
+    def test_is_out_of_tokyo_coverage_empty_candidates(self):
+        import sqlite3
+        conn = sqlite3.connect(":memory:")
+        db = TokyoSpatialDB(conn)
+        try:
+            # 1. candidates が空配列でも親 entry に東京都 city_code があれば東京都内（False）と判定
+            school_district_elem = {
+                "status": "ok",
+                "elementary_school": {"candidates": [], "city_code": "13112"},
+                "junior_high_school": None,
+            }
+            out_elem = db._is_out_of_tokyo_coverage(
+                lat=35.65,
+                lon=139.65,
+                zoning={"status": "no_match"},
+                school_district=school_district_elem,
+            )
+            self.assertFalse(out_elem)
+
+            # 2. junior_high_school の candidates が空配列でも親 entry に東京都 city_name があれば東京都内（False）
+            school_district_jhs = {
+                "status": "ok",
+                "elementary_school": None,
+                "junior_high_school": {"candidates": [], "city_name": "世田谷区"},
+            }
+            out_jhs = db._is_out_of_tokyo_coverage(
+                lat=35.65,
+                lon=139.65,
+                zoning={"status": "no_match"},
+                school_district=school_district_jhs,
+            )
+            self.assertFalse(out_jhs)
+
+            # 3. candidates が空配列かつ親 entry が東京都外（松戸市: 12207）なら東京都外（True）と判定
+            school_district_out = {
+                "status": "ok",
+                "elementary_school": {"candidates": [], "city_code": "12207"},
+                "junior_high_school": None,
+            }
+            out_matsudo = db._is_out_of_tokyo_coverage(
+                lat=35.78,
+                lon=139.90,
+                zoning={"status": "no_match"},
+                school_district=school_district_out,
+            )
+            self.assertTrue(out_matsudo)
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

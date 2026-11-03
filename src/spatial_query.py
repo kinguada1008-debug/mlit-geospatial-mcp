@@ -237,10 +237,14 @@ class TokyoSpatialDB:
         val = str(value or "").strip()
         if not val:
             return False
-        clean_val = val.removeprefix("東京都").strip()
-        if val.startswith("13") or val.startswith("東京都") or val in TOKYO_CITY_CODE_MAP:
+        if val == "東京都":
             return True
-        if val in TOKYO_CITY_CODE_MAP.values() or clean_val in TOKYO_CITY_CODE_MAP.values():
+        if val.startswith("13") and len(val) in (2, 5, 6) and val.isdigit():
+            return True
+        if val in TOKYO_CITY_CODE_MAP or val in TOKYO_CITY_CODE_MAP.values():
+            return True
+        clean_val = val.removeprefix("東京都").strip()
+        if clean_val and clean_val in TOKYO_CITY_CODE_MAP.values():
             return True
         return False
 
@@ -324,7 +328,7 @@ class TokyoSpatialDB:
                                 or self._is_tokyo_city_identifier(cand.get("city_name"))
                             ):
                                 return False
-                    elif (
+                    if (
                         self._is_tokyo_city_identifier(entry.get("city_code"))
                         or self._is_tokyo_city_identifier(entry.get("city_name"))
                     ):
