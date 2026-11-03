@@ -231,29 +231,183 @@ class TokyoSpatialDB:
             return False
         return True
 
-    def lookup_carte_7layers(self, lat: float, lon: float) -> Dict[str, Any]:
+    @staticmethod
+    def _is_tokyo_city_identifier(value: Any) -> bool:
+        """自治体コード（13xxx）または東京都内の自治体名であるかを厳密判定する。"""
+        val = str(value or "").strip()
+        if not val:
+            return False
+        clean_val = val.removeprefix("東京都").strip()
+        if val.startswith("13") or val.startswith("東京都") or val in TOKYO_CITY_CODE_MAP:
+            return True
+        if val in TOKYO_CITY_CODE_MAP.values() or clean_val in TOKYO_CITY_CODE_MAP.values():
+            return True
+        return False
+
+    @staticmethod
+    def _build_out_of_coverage_7layers_hazards() -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """東京都外（ローカル空間DB対象外エリア）向けの7系統ハザード未判定レスポンスを生成する。"""
+        flood_out = {
+            "status": "out_of_coverage",
+            "is_designated": None,
+            "is_flooded": None,
+            "depth_rank": "未判定（東京都外）",
+            "description": "東京都外（ローカル空間DB対象外エリア）のため浸水リスク未判定。国交省ハザードマップまたは自治体公表図をご確認ください。",
+            "note": "東京都外（ローカル空間DB対象外エリア）のため浸水リスク未判定。国交省ハザードマップまたは自治体公表図をご確認ください。",
+        }
+        landslide_out = {
+            "status": "out_of_coverage",
+            "is_designated": None,
+            "is_warning_zone": None,
+            "is_red_zone": None,
+            "hazard_type": "未判定（東京都外）",
+            "description": "東京都外（ローカル空間DB対象外エリア）のため土砂災害リスク未判定。自治体ハザードマップをご確認ください。",
+            "zones": [],
+        }
+        return flood_out, landslide_out
+
+    def _is_out_of_tokyo_coverage(
+        self,
+        lat: float,
+        lon: float,
+        zoning: Dict[str, Any],
+        school_district: Dict[str, Any],
+        pop_proj: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        対象座標が東京都オープンデータ空間DB（tokyo_spatial.sqlite）の収録エリア外であるかを判定する。
+        Fail-Closed: 東京都外（千葉・埼玉・神奈川等）の地点を「浸水想定区域外・安全」と誤判定させない。
+        """
+        zoning_status = zoning.get("status")
+        school_status = school_district.get("status")
+        pop_status = (pop_proj or {}).get("status", "not_loaded")
+
+        # 全ての境界判定テーブルが未ロード（インメモリ空DB等）の場合は各サブレイヤーの not_loaded に委譲
+        if (
+            zoning_status == "not_loaded"
+            and school_status == "not_loaded"
+            and pop_status == "not_loaded"
+        ):
+            return False
+
+        # 東京都居住域のバウンディングボックス（伊豆諸島・小笠原諸島（父島・母島）を含む）
+        # 緯度 24.0 〜 36.0 (母島 ~26.6 〜 奥多摩北端 ~35.898)
+        # 経度 138.8 〜 142.5 (奥多摩西端 ~138.94 〜 父島・母島東端 ~142.24)
+        if not (24.0 <= lat <= 36.0 and 138.8 <= lon <= 142.5):
+            return True
+
+        # 1. 用途地域の指定がある場合（都市計画区域内）
+        if zoning_status in ("ok", "ambiguous"):
+            primary_obj = zoning.get("primary") or {}
+            primary_city = str(primary_obj.get("city_code") or primary_obj.get("city_name") or "").strip()
+            if primary_city:
+                return not self._is_tokyo_city_identifier(primary_city)
+            candidates = zoning.get("candidates") or []
+            cand_cities = [
+                str(c.get("city_code") or c.get("city_name") or "").strip()
+                for c in candidates
+                if isinstance(c, dict) and str(c.get("city_code") or c.get("city_name") or "").strip()
+            ]
+            if cand_cities:
+                return not any(self._is_tokyo_city_identifier(cc) for cc in cand_cities)
+            return False
+
+        # 2. 公立小中学校区の判定がある場合（奥多摩・島しょ部含む東京都全域の公立学区）
+        if school_status in ("ok", "ambiguous"):
+            for key in ("elementary_school", "junior_high_school"):
+                entry = school_district.get(key)
+                if isinstance(entry, dict):
+                    if "candidates" in entry and isinstance(entry["candidates"], list):
+                        for cand in entry["candidates"]:
+                            if isinstance(cand, dict) and (
+                                self._is_tokyo_city_identifier(cand.get("city_code"))
+                                or self._is_tokyo_city_identifier(cand.get("city_name"))
+                            ):
+                                return False
+                    elif (
+                        self._is_tokyo_city_identifier(entry.get("city_code"))
+                        or self._is_tokyo_city_identifier(entry.get("city_name"))
+                    ):
+                        return False
+            return True
+
+        # 3. 250mメッシュ将来人口推計の判定がある場合（用途地域・学区ポリゴン外の東京都メッシュ補完）
+        if pop_status == "ok" and isinstance(pop_proj, dict):
+            p_code = str(pop_proj.get("city_code") or "").strip()
+            if self._is_tokyo_city_identifier(p_code):
+                return False
+            return True
+
+        # ロード済みの境界判定テーブルすべてで東京都内と確認できないため東京都外と判定（Fail-Closed）
+        return True
+
+    def lookup_carte_7layers(
+        self,
+        lat: float,
+        lon: float,
+        _pop_proj: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         SorAi 物件診断（物件カルテ）に必要な公的 7系統のデータを一撃で即答する。
         所要時間: 2〜5ms（外部API通信 0回）
         """
         pt = Point(lon, lat)
 
+        zoning = self._lookup_zoning(pt, lat, lon)
+        land_price = self._lookup_land_price(lat, lon, radius_km=1.2)
+        school_district = self._lookup_schools(pt, lat, lon)
+        flood_risk = self._lookup_flood(pt, lat, lon)
+        landslide_risk = self._lookup_landslide(pt, lat, lon)
+        medical = self._lookup_medical(lat, lon, radius_km=1.2)
+        nursery = self._lookup_nursery(lat, lon, radius_km=1.0)
+
+        pop_proj = _pop_proj
+        if (
+            pop_proj is None
+            and zoning.get("status") not in ("ok", "ambiguous")
+            and school_district.get("status") != "ok"
+        ):
+            pop_proj = self._lookup_population_projection(latlon_to_mesh250(lat, lon))
+
+        if self._is_out_of_tokyo_coverage(lat, lon, zoning, school_district, pop_proj=pop_proj):
+            flood_out, landslide_out = self._build_out_of_coverage_7layers_hazards()
+            return {
+                "query_coordinate": {"lat": lat, "lon": lon},
+                "zoning": zoning,
+                "land_price": land_price,
+                "school_district": school_district,
+                "flood_risk": flood_out,
+                "flood": flood_out,
+                "landslide_risk": landslide_out,
+                "landslide": landslide_out,
+                "medical": medical,
+                "nursery": nursery,
+                "safety_score": "UNVERIFIED",
+            }
+
+        safety_score = "A"
+        if flood_risk.get("is_flooded") or landslide_risk.get("is_warning_zone"):
+            safety_score = "C" if (flood_risk.get("is_flooded") and landslide_risk.get("is_warning_zone")) else "B"
+
         return {
             "query_coordinate": {"lat": lat, "lon": lon},
             # 1. 都市計画・用途地域
-            "zoning": self._lookup_zoning(pt, lat, lon),
+            "zoning": zoning,
             # 2. 地価公示・相場
-            "land_price": self._lookup_land_price(lat, lon, radius_km=1.2),
+            "land_price": land_price,
             # 3. 小中学校区
-            "school_district": self._lookup_schools(pt, lat, lon),
+            "school_district": school_district,
             # 4. 洪水浸水想定
-            "flood_risk": self._lookup_flood(pt, lat, lon),
+            "flood_risk": flood_risk,
+            "flood": flood_risk,
             # 5. 土砂災害警戒区域
-            "landslide_risk": self._lookup_landslide(pt, lat, lon),
+            "landslide_risk": landslide_risk,
+            "landslide": landslide_risk,
             # 6. 近傍医療機関 (1.2km)
-            "medical": self._lookup_medical(lat, lon, radius_km=1.2),
+            "medical": medical,
             # 7. 近傍保育施設 (1.0km)
-            "nursery": self._lookup_nursery(lat, lon, radius_km=1.0),
+            "nursery": nursery,
+            "safety_score": safety_score,
         }
 
     def lookup_comprehensive_13layers(self, lat: float, lon: float) -> Dict[str, Any]:
@@ -265,9 +419,77 @@ class TokyoSpatialDB:
         pt = Point(lon, lat)
         mesh250 = latlon_to_mesh250(lat, lon)
 
-        # 既存7系統を取得
-        base_carte = self.lookup_carte_7layers(lat, lon)
         pop_proj = self._lookup_population_projection(mesh250)
+        # 既存7系統を取得（pop_projを共有して境界判定の一貫性を100%担保・重複クエリ回避）
+        base_carte = self.lookup_carte_7layers(lat, lon, _pop_proj=pop_proj)
+
+        if base_carte.get("safety_score") == "UNVERIFIED":
+            coastal_out = {
+                "status": "out_of_coverage",
+                "is_designated": None,
+                "is_inundated": None,
+                "storm_surge": {
+                    "status": "out_of_coverage",
+                    "is_designated": None,
+                    "max_depth_raw": "未判定（東京都外）",
+                },
+                "tsunami": {
+                    "status": "out_of_coverage",
+                    "is_designated": None,
+                    "max_depth_raw": "未判定（東京都外）",
+                },
+                "description": "東京都外（ローカル空間DB対象外エリア）のため高潮・津波リスク未判定。",
+            }
+            embankment_out = {
+                "status": "out_of_coverage",
+                "is_designated": None,
+                "zones": [],
+                "description": "東京都外（ローカル空間DB対象外エリア）のため大規模盛土造成地未判定。",
+            }
+            liquefaction_out = {
+                "status": "out_of_coverage",
+                "is_designated": None,
+                "relative_score": None,
+                "landform_name": "未判定（東京都外）",
+                "tendency_label": "未判定（東京都外）",
+                "assessment": "out_of_coverage",
+                "note": "東京都外（ローカル空間DB対象外エリア）のため液状化リスク未判定。",
+            }
+            base_carte["mesh250_code"] = mesh250
+            base_carte["fire_prevention"] = {"status": "out_of_coverage", "designation": "未判定（東京都外）", "matches": []}
+            base_carte["liquefaction"] = liquefaction_out
+            base_carte["embankment"] = embankment_out
+            base_carte["coastal_hazard"] = coastal_out
+            base_carte["coastal"] = coastal_out
+            base_carte["population_projection"] = {
+                "status": "out_of_coverage",
+                "mesh_code": mesh250,
+                "population_2020": None,
+                "population_2050": None,
+                "change_rate_percent": None,
+                "maintenance_ratio_percent": None,
+                "reason": "東京都外（ローカル空間DB対象外エリア）のため人口推計未判定。",
+            }
+            base_carte["district_plan"] = {"status": "out_of_coverage", "has_plan": None, "plans": [], "urban_controls": []}
+            base_carte["sorai_index"] = {
+                "version": "1.0",
+                "total_score": None,
+                "rank": "UNVERIFIED",
+                "rank_label": "UNVERIFIED（東京都外・公的ハザード未確定）",
+                "pillars": {
+                    "tranquility": {"score": 0, "max_score": 30, "assessment": "東京都外（ローカル空間DB対象外エリア）のため未判定です。"},
+                    "resilience": {"score": 0, "max_score": 35, "assessment": "東京都外（ローカル空間DB対象外エリア）のため未判定です。"},
+                    "asset_defense": {"score": 0, "max_score": 20, "assessment": "東京都外（ローカル空間DB対象外エリア）のため未判定です。"},
+                    "livability": {"score": 0, "max_score": 15, "assessment": "東京都外（ローカル空間DB対象外エリア）のため未判定です。"},
+                },
+                "signature_indices": {
+                    "silent_value_index": {"env_protection_rate": None, "category": "判定対象外", "rationale": "東京都外エリアのため算出対象外です。"},
+                    "demographic_momentum": {"population_2050_ratio_percent": None, "land_price_change_percent": None, "category": "判定対象外", "rationale": "東京都外エリアのため算出対象外です。"},
+                },
+                "editorial_summary": "東京都外（ローカル空間DB対象外エリア）のためSorai Indexおよび公的ハザードは未判定（UNVERIFIED）です。現地の都市計画図およびハザードマップをご確認ください。",
+                "inspection_checkpoints": ["東京都外の物件です。自治体公表の都市計画図および各種ハザードマップ原図を必ずご確認ください。"],
+            }
+            return base_carte
 
         zoning_candidates = base_carte.get("zoning", {}).get("candidates") or []
         candidate_cities = {
@@ -427,10 +649,13 @@ class TokyoSpatialDB:
             price = _finite_int(r["price"], min_val=1, max_val=500_000_000)
             change_rate = _finite_float_bounded(r["change_rate"], min_val=-100.0, max_val=1000.0)
             sorai_idx = self.evaluate_sorai_index(lat_val, lon_val)
+            raw_total_score = sorai_idx.get("total_score")
+            if raw_total_score is None:
+                continue
 
             svi = sorai_idx.get("signature_indices", {}).get("silent_value_index", {})
             category = str(svi.get("category") or "")
-            total_score = int(sorai_idx.get("total_score", 0))
+            total_score = int(raw_total_score)
             is_hidden_gem = bool(total_score >= 78 and "隠れ静寂立地" in category)
 
             items.append({
@@ -1512,7 +1737,7 @@ def compute_sorai_index(carte: Dict[str, Any]) -> Dict[str, Any]:
     # -------------------------------------------------------------------------
     # Total Score & Rank (Fail-Closed when core layers are unverified)
     # -------------------------------------------------------------------------
-    total_score = int(tranquility_score + resilience_score + asset_defense_score + livability_score)
+    total_score: Optional[int] = int(tranquility_score + resilience_score + asset_defense_score + livability_score)
     core_verified_count = sum([
         zoning_name is not None,
         is_flooded is not None,
@@ -1521,7 +1746,11 @@ def compute_sorai_index(carte: Dict[str, Any]) -> Dict[str, Any]:
         coast_inun is not None,
     ])
 
-    if core_verified_count < 3:
+    if carte.get("safety_score") == "UNVERIFIED" or flood_data.get("status") == "out_of_coverage":
+        rank = "UNVERIFIED"
+        rank_label = "UNVERIFIED（東京都外・公的ハザード未確定）"
+        total_score = None
+    elif core_verified_count < 3:
         rank = "C"
         rank_label = "Cランク（環境・災害リスク要確認）"
     elif total_score >= 85:

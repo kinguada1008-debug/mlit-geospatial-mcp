@@ -587,6 +587,134 @@ class TestTokyoSpatialDB(unittest.TestCase):
         finally:
             empty_db.close()
 
+    @unittest.skipUnless(DB_PATH.exists(), "tokyo_spatial.sqlite が存在しない場合はスキップ")
+    def test_out_of_tokyo_coverage_fail_closed(self):
+        """
+        東京都外（千葉県松戸・千葉市、埼玉県、神奈川県等）の座標に対して、
+        浸水想定区域外・安全ランクAと誤断定せず、
+        status: out_of_coverage / safety_score: UNVERIFIED / rank: UNVERIFIED に
+        フェイルクローズ（Fail-Closed）すること。
+        """
+        db = TokyoSpatialDB(DB_PATH)
+        try:
+            # 1. 千葉県松戸市 (35.784, 139.900)
+            matsudo_7 = db.lookup_carte_7layers(35.784, 139.900)
+            self.assertEqual(matsudo_7["safety_score"], "UNVERIFIED")
+            self.assertEqual(matsudo_7["flood_risk"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_7["flood_risk"]["is_designated"])
+            self.assertEqual(matsudo_7["landslide_risk"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_7["landslide_risk"]["is_designated"])
+
+            matsudo_13 = db.lookup_comprehensive_13layers(35.784, 139.900)
+            self.assertEqual(matsudo_13["safety_score"], "UNVERIFIED")
+            self.assertEqual(matsudo_13["flood_risk"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_13["flood_risk"]["is_designated"])
+            self.assertEqual(matsudo_13["landslide_risk"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_13["landslide_risk"]["is_designated"])
+            self.assertEqual(matsudo_13["coastal_hazard"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_13["coastal_hazard"]["is_designated"])
+            self.assertEqual(matsudo_13["embankment"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_13["embankment"]["is_designated"])
+            self.assertEqual(matsudo_13["liquefaction"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_13["liquefaction"]["is_designated"])
+            self.assertEqual(matsudo_13["sorai_index"]["rank"], "UNVERIFIED")
+            self.assertIsNone(matsudo_13["sorai_index"]["total_score"])
+
+            # 2. 千葉県千葉市中央区 (35.607, 140.106)
+            chiba_13 = db.lookup_comprehensive_13layers(35.607, 140.106)
+            self.assertEqual(chiba_13["safety_score"], "UNVERIFIED")
+            self.assertEqual(chiba_13["sorai_index"]["rank"], "UNVERIFIED")
+            self.assertIsNone(chiba_13["sorai_index"]["total_score"])
+
+            # 3. 埼玉県さいたま市浦和 (35.859, 139.657)
+            urawa_7 = db.lookup_carte_7layers(35.859, 139.657)
+            self.assertEqual(urawa_7["safety_score"], "UNVERIFIED")
+            self.assertEqual(urawa_7["flood_risk"]["status"], "out_of_coverage")
+
+            # 4. 東京都内（南青山 35.662846, 139.718817）が影響を受けず正常評価されること
+            aoyama = db.lookup_comprehensive_13layers(35.662846, 139.718817)
+            self.assertEqual(aoyama["safety_score"], "A")
+            self.assertNotEqual(aoyama["sorai_index"]["rank"], "UNVERIFIED")
+            self.assertIsInstance(aoyama["sorai_index"]["total_score"], int)
+        finally:
+            db.close()
+
+    def test_out_of_tokyo_coverage_in_memory_and_population_mesh_consistency(self):
+        """
+        実DBファイル非依存（インメモリDB）での東京都外 Fail-Closed 境界検証:
+        1) 用途地域・学区が未ヒットでも、東京都 (13xxx) の population_mesh のみヒットする地点（奥多摩山間部等）では
+           lookup_carte_7layers / lookup_comprehensive_13layers ともに東京都内として一貫判定されること。
+        2) population_mesh に千葉県松戸市 (12207) 等の他県メッシュが混入していても、
+           city_name フォールバックに惑わされず確実に out_of_coverage / UNVERIFIED にフェイルクローズすること。
+        3) BBOX 外（札幌・大阪等）が確実に out_of_coverage / UNVERIFIED となること。
+        """
+        from shapely.geometry import box
+        from src.spatial_query import latlon_to_mesh250
+
+        conn = self._create_empty_13layer_conn()
+        # 港区周辺の用途地域ダミーを1件入れて zoning テーブルをロード済み状態にする
+        minato_wkb = box(139.71, 35.65, 139.73, 35.67).wkb
+        conn.execute(
+            "INSERT INTO zoning VALUES (1, '第一種中高層住居専用地域', '3', 60, 200, '13103', ?)",
+            (minato_wkb,),
+        )
+        conn.execute("INSERT INTO zoning_idx VALUES (1, 139.71, 139.73, 35.65, 35.67)")
+
+        # flood_risk / landslide_risk にも遠方ダミーを1件入れてテーブルをロード済み状態にする
+        far_wkb = box(139.46, 35.50, 139.48, 35.51).wkb
+        conn.execute("INSERT INTO flood_risk VALUES (1, '境川', 2, '0.5m〜3.0m', ?)", (far_wkb,))
+        conn.execute("INSERT INTO flood_risk_idx VALUES (1, 139.46, 139.48, 35.50, 35.51)")
+        conn.execute("INSERT INTO landslide_risk VALUES (1, '急傾斜地の崩壊', '警戒区域', '稲城市', ?)", (far_wkb,))
+        conn.execute("INSERT INTO landslide_risk_idx VALUES (1, 139.46, 139.48, 35.50, 35.51)")
+
+        # 奥多摩町 (35.809, 139.096): 用途地域・学区なし、population_mesh (13308) のみヒット
+        okutama_lat, okutama_lon = 35.809, 139.096
+        okutama_mesh = latlon_to_mesh250(okutama_lat, okutama_lon)
+        conn.execute(
+            "INSERT INTO population_mesh VALUES (?, '13308', 50.0, 35.0, 'normal', 'normal')",
+            (okutama_mesh,),
+        )
+
+        # 千葉県松戸市 (35.784, 139.900): population_mesh に他県コード '12207' が混入しているケース
+        matsudo_lat, matsudo_lon = 35.784, 139.900
+        matsudo_mesh = latlon_to_mesh250(matsudo_lat, matsudo_lon)
+        conn.execute(
+            "INSERT INTO population_mesh VALUES (?, '12207', 200.0, 190.0, 'normal', 'normal')",
+            (matsudo_mesh,),
+        )
+        conn.commit()
+
+        db = TokyoSpatialDB(conn)
+        try:
+            # 1) 奥多摩 (13308): 7layers と 13layers の両方で UNVERIFIED にならず東京都内判定（キメラ状態なし）
+            okutama_7 = db.lookup_carte_7layers(okutama_lat, okutama_lon)
+            okutama_13 = db.lookup_comprehensive_13layers(okutama_lat, okutama_lon)
+            self.assertEqual(okutama_7["safety_score"], "A")
+            self.assertEqual(okutama_7["flood_risk"]["status"], "no_match")
+            self.assertEqual(okutama_13["safety_score"], "A")
+            self.assertEqual(okutama_13["flood_risk"]["status"], "no_match")
+            self.assertNotEqual(okutama_13["sorai_index"]["rank"], "UNVERIFIED")
+
+            # 2) 松戸市 (12207 メッシュ混入): 7layers / 13layers ともに out_of_coverage / UNVERIFIED
+            matsudo_7 = db.lookup_carte_7layers(matsudo_lat, matsudo_lon)
+            matsudo_13 = db.lookup_comprehensive_13layers(matsudo_lat, matsudo_lon)
+            self.assertEqual(matsudo_7["safety_score"], "UNVERIFIED")
+            self.assertEqual(matsudo_7["flood_risk"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_7["flood_risk"]["is_designated"])
+            self.assertEqual(matsudo_13["safety_score"], "UNVERIFIED")
+            self.assertEqual(matsudo_13["flood_risk"]["status"], "out_of_coverage")
+            self.assertEqual(matsudo_13["population_projection"]["status"], "out_of_coverage")
+            self.assertIsNone(matsudo_13["population_projection"]["population_2050"])
+            self.assertEqual(matsudo_13["sorai_index"]["rank"], "UNVERIFIED")
+            self.assertIsNone(matsudo_13["sorai_index"]["total_score"])
+
+            # 3) BBOX 外（札幌: 43.062, 141.354）: 即座に out_of_coverage / UNVERIFIED
+            sapporo_13 = db.lookup_comprehensive_13layers(43.062, 141.354)
+            self.assertEqual(sapporo_13["safety_score"], "UNVERIFIED")
+            self.assertEqual(sapporo_13["sorai_index"]["rank"], "UNVERIFIED")
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()
