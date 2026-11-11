@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "anyio",
-    "mcp",
+    "mcp<2",
     "shapely",
     "pyproj",
     "requests",
