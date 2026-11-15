@@ -215,3 +215,6 @@ data/*.sqlite-journal
 data/*.zip
 data/raw/
 data/work/
+
+# Vite / Tooling cache
+.vite/
