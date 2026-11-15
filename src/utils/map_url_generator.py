@@ -5,6 +5,16 @@ lat, lon, target_apis から地図表示用URLを生成する
 
 from utils.const import MAP_URL_ZOOM, SURVER_YEAR
 
+_WELFARE_CLASS_LAYERS: tuple[tuple[str, str], ...] = (
+    ("shelterLayer", "01"),
+    ("elderlyWelfareFacilityLayer", "02"),
+    ("facilityForTheHandicappedLayer", "03"),
+    ("socialParticipationSupportFacilitiesLayer", "04"),
+    ("childWelfareFacilityLayer", "05"),
+    ("maternalAndChildWelfareLayer", "06"),
+    ("otherWelfareFacilityLayer", "99"),
+)
+
 # target_api番号 → レイヤ・条件・追加パラメータ対応表
 API_LAYERS = {
     3: [
@@ -64,8 +74,8 @@ API_LAYERS = {
         # 分類レイヤー
         *[
             {
-                "layer": l,
-                "condition": lambda p, l=l, code=code: (
+                "layer": layer_name,
+                "condition": lambda p, code=code: (
                     isinstance(p.get("welfare_facility_class_code"), list)
                     and any(
                         (c and isinstance(c, str) and c.strip() == code)
@@ -74,20 +84,12 @@ API_LAYERS = {
                 ),
                 "params": lambda p: [],
             }
-            for l, code in [
-                ("shelterLayer", "01"),
-                ("elderlyWelfareFacilityLayer", "02"),
-                ("facilityForTheHandicappedLayer", "03"),
-                ("socialParticipationSupportFacilitiesLayer", "04"),
-                ("childWelfareFacilityLayer", "05"),
-                ("maternalAndChildWelfareLayer", "06"),
-                ("otherWelfareFacilityLayer", "99"),
-            ]
+            for layer_name, code in _WELFARE_CLASS_LAYERS
         ],
         # 指定がなければ全分類レイヤー
         *[
             {
-                "layer": l,
+                "layer": layer_name,
                 "condition": lambda p: (
                     not (
                         isinstance(p.get("welfare_facility_class_code"), list)
@@ -96,21 +98,13 @@ API_LAYERS = {
                 ),
                 "params": lambda p: [],
             }
-            for l in [
-                "shelterLayer",
-                "elderlyWelfareFacilityLayer",
-                "facilityForTheHandicappedLayer",
-                "socialParticipationSupportFacilitiesLayer",
-                "childWelfareFacilityLayer",
-                "maternalAndChildWelfareLayer",
-                "otherWelfareFacilityLayer",
-            ]
+            for layer_name, _ in _WELFARE_CLASS_LAYERS
         ],
     ],
     # 他APIは従来通りレイヤ名のみ
     4: [
-        {"layer": l, "condition": lambda p, l=l: True, "params": lambda p: []}
-        for l in [
+        {"layer": layer_name, "condition": lambda p: True, "params": lambda p: []}
+        for layer_name in [
             "urbanPlanAreaLayer",
             "areaClassification",
             "urbanizationPromotionAreaLayer",
@@ -146,8 +140,8 @@ API_LAYERS = {
         },
     ],
     9: [
-        {"layer": l, "condition": lambda p, l=l: True, "params": lambda p: []}
-        for l in [
+        {"layer": layer_name, "condition": lambda p: True, "params": lambda p: []}
+        for layer_name in [
             "school",
             "elementarySchoolLayer",
             "juniorHighSchoolLayer",
@@ -170,8 +164,8 @@ API_LAYERS = {
         },
     ],
     11: [
-        {"layer": l, "condition": lambda p, l=l: True, "params": lambda p: []}
-        for l in [
+        {"layer": layer_name, "condition": lambda p: True, "params": lambda p: []}
+        for layer_name in [
             "medicalInstitution",
             "hospitalLayer",
             "clinicLayer",
@@ -207,8 +201,8 @@ API_LAYERS = {
         },
     ],
     18: [
-        {"layer": l, "condition": lambda p, l=l: True, "params": lambda p: []}
-        for l in [
+        {"layer": layer_name, "condition": lambda p: True, "params": lambda p: []}
+        for layer_name in [
             "cityTownHall",
             "townHallLayer",
             "townHallBranchLayer",
@@ -288,8 +282,8 @@ API_LAYERS = {
         },
     ],
     29: [
-        {"layer": l, "condition": lambda p, l=l: True, "params": lambda p: []}
-        for l in [
+        {"layer": layer_name, "condition": lambda p: True, "params": lambda p: []}
+        for layer_name in [
             "sedimentDisasterArea",
             "dosekiryukeikaikuikiLayer",
             "kyukeishakeikaikuikiLayer",
