@@ -9,7 +9,6 @@ Functions:
 """
 
 import logging
-from pathlib import Path
 
 from request_processor.models.api_models import RequestModel
 from request_processor.service.geospatial_service import GeospatialService

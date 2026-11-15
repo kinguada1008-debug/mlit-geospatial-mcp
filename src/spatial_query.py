@@ -46,12 +46,12 @@ def latlon_to_mesh250(lat: float, lon: float) -> str:
     指定座標から JIS 250m 地域メッシュコード（10桁）を計算する。
     所要時間: < 1μs（空間インデックス不要の O(1) 計算）
     """
-    I = int(math.floor(lat * 480))
-    J = int(math.floor((lon - 100) * 320))
-    p, q = I // 320, J // 320
-    a, b = (I % 320) // 40, (J % 320) // 40
-    c, d = (I % 40) // 4, (J % 40) // 4
-    r, s = I % 4, J % 4
+    lat_idx = int(math.floor(lat * 480))
+    lon_idx = int(math.floor((lon - 100) * 320))
+    p, q = lat_idx // 320, lon_idx // 320
+    a, b = (lat_idx % 320) // 40, (lon_idx % 320) // 40
+    c, d = (lat_idx % 40) // 4, (lon_idx % 40) // 4
+    r, s = lat_idx % 4, lon_idx % 4
     m500 = 1 + (s // 2) + 2 * (r // 2)
     m250 = 1 + (s % 2) + 2 * (r % 2)
     return f"{p:02d}{q:02d}{a}{b}{c}{d}{m500}{m250}"
