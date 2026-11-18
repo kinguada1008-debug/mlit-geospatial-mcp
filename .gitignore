@@ -218,3 +218,6 @@ data/work/
 
 # Vite / Tooling cache
 .vite/
+
+# Local verification script cache
+mlit_cache/

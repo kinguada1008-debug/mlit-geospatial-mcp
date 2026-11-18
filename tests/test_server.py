@@ -8,7 +8,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Ensure src is in sys.path
 sys.path.insert(0, "src")
@@ -74,19 +74,32 @@ sys.exit(0)
     async def _test_server_ranking_tool(self):
         """
         Verify that handle_list_tools includes lookup_station_or_address_ranking
-        and handle_call_tool executes it correctly.
+        and handle_call_tool executes it correctly with offline mocked DB.
         """
         import json
+
         tools = await server.handle_list_tools()
         names = [t.name for t in tools]
         self.assertIn("lookup_station_or_address_ranking", names)
         self.assertIn("lookup_tokyo_spatial", names)
 
-        # Call with query
-        res = await server.handle_call_tool(
-            "lookup_station_or_address_ranking",
-            {"query": "恵比寿", "limit": 3},
-        )
+        mock_payload = {
+            "status": "ok",
+            "area_summary": {"area_label": "恵比寿駅"},
+            "ranked_locations": [{"rank": 1}, {"rank": 2}, {"rank": 3}],
+        }
+        mock_db = MagicMock()
+        mock_db.lookup_station_or_address_ranking.return_value = mock_payload
+
+        with patch("spatial_query.TokyoSpatialDB", return_value=mock_db) as mock_db_cls:
+            res = await server.handle_call_tool(
+                "lookup_station_or_address_ranking",
+                {"query": "恵比寿", "limit": 3},
+            )
+
+        mock_db_cls.assert_called_once_with()
+        mock_db.lookup_station_or_address_ranking.assert_called_once_with("恵比寿", limit=3)
+        mock_db.close.assert_called_once_with()
         self.assertEqual(len(res), 1)
         data = json.loads(res[0].text)
         self.assertEqual(data["status"], "ok")

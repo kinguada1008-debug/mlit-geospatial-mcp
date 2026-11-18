@@ -1,5 +1,5 @@
 anyio
-mcp
+mcp<2
 shapely
 pyproj
 requests

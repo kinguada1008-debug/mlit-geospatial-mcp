@@ -8,13 +8,7 @@ import logging
 import sys
 import uuid
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
-
-# Ensure src directory is in sys.path for local module resolution
-_SRC_DIR = str(Path(__file__).resolve().parent)
-if _SRC_DIR not in sys.path:
-    sys.path.insert(0, _SRC_DIR)
-
+from typing import Any
 
 import anyio
 import mcp.types as types
@@ -22,10 +16,13 @@ from mcp.server.lowlevel import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 
-if TYPE_CHECKING:
-    from request_processor.handler import handle_request
-from tools import API_SPECS, TOOLS
-from utils.payload import build_payload
+# Ensure src directory is in sys.path for local module resolution
+_SRC_DIR = str(Path(__file__).resolve().parent)
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+from tools import API_SPECS, TOOLS  # noqa: E402
+from utils.payload import build_payload  # noqa: E402
 
 
 def __getattr__(name: str) -> Any:
