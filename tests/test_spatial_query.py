@@ -783,6 +783,69 @@ class TestTokyoSpatialDB(unittest.TestCase):
         finally:
             db.close()
 
+    def test_radius_lookup_empty_and_operational_error_fail_closed(self):
+        conn = self._create_empty_13layer_conn()
+        # land_price に東京都外遠方レコードを1件だけ入れ、テーブル自体を ready にする
+        conn.execute(
+            "INSERT INTO land_price (id, price, change_rate, address, station_name, station_distance, lat, lon) "
+            "VALUES (1, 1000000, 1.0, '東京都奥多摩町', '奥多摩', 500, 35.809, 139.096)"
+        )
+        conn.execute(
+            "INSERT INTO land_price_idx (id, minX, maxX, minY, maxY) VALUES (1, 139.096, 139.096, 35.809, 35.809)"
+        )
+        conn.commit()
+
+        db = TokyoSpatialDB(conn)
+        try:
+            # 1. 検索半径内に該当なし -> no_match
+            empty_lp = db._lookup_land_price(35.662846, 139.718817, radius_km=1.2)
+            self.assertEqual(empty_lp, {"status": "no_match", "nearest": []})
+
+            # 2. インデックス欠損による OperationalError 時も例外漏洩せず not_loaded に Fail-Closed
+            conn.execute("DROP TABLE land_price_idx")
+            conn.commit()
+            err_lp = db._lookup_land_price(35.662846, 139.718817, radius_km=1.2)
+            self.assertEqual(err_lp, {"status": "not_loaded", "nearest": []})
+        finally:
+            db.close()
+
+    def test_flood_and_landslide_truncation_fail_closed(self):
+        from shapely.geometry import Point, Polygon
+
+        conn = self._create_empty_13layer_conn()
+        l_shape = Polygon([
+            (139.70, 35.65), (139.75, 35.65), (139.75, 35.655),
+            (139.705, 35.655), (139.705, 35.68), (139.70, 35.68)
+        ])
+        for i in range(1, 4):
+            conn.execute(
+                "INSERT INTO flood_risk (id, river_name, rank_code, depth_label, geom_wkb) VALUES (?, ?, 3, '3.0m〜5.0m', ?)",
+                (i, f"河川{i}", l_shape.wkb)
+            )
+            conn.execute("INSERT INTO flood_risk_idx (id, minX, maxX, minY, maxY) VALUES (?, 139.70, 139.75, 35.65, 35.68)", (i,))
+            conn.execute(
+                "INSERT INTO landslide_risk (id, hazard_type, zone_type, address, geom_wkb) VALUES (?, '急傾斜地', 'イエロー', ?, ?)",
+                (i, f"港区{i}", l_shape.wkb)
+            )
+            conn.execute("INSERT INTO landslide_risk_idx (id, minX, maxX, minY, maxY) VALUES (?, 139.70, 139.75, 35.65, 35.68)", (i,))
+        conn.commit()
+
+        db = TokyoSpatialDB(conn, max_spatial_candidates=2)
+        try:
+            lat, lon = 35.662846, 139.718817
+            pt = Point(lon, lat)
+            flood_res = db._lookup_flood(pt, lat, lon)
+            self.assertEqual(flood_res["status"], "not_loaded")
+            self.assertIsNone(flood_res["is_flooded"])
+            self.assertIn("空間候補上限超過", flood_res["reason"])
+
+            landslide_res = db._lookup_landslide(pt, lat, lon)
+            self.assertEqual(landslide_res["status"], "not_loaded")
+            self.assertIsNone(landslide_res["is_warning_zone"])
+            self.assertIn("空間候補上限超過", landslide_res["reason"])
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

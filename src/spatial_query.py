@@ -10,7 +10,7 @@ import re
 import sqlite3
 import unicodedata
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from shapely import wkb
 from shapely.geometry import Point
 
@@ -230,6 +230,84 @@ class TokyoSpatialDB:
         if idx_name and idx_name not in self._raw_tables:
             return False
         return True
+
+    def _fetch_covering_rows(
+        self,
+        table: str,
+        pt: Point,
+        lat: float,
+        lon: float,
+        select_columns: str,
+        alias: str,
+    ) -> Tuple[str, List[sqlite3.Row]]:
+        """R-tree BBOX 検索と WKB covers() 精密判定を行い、候補超過時は Fail-Closed で状態コードを返す。"""
+        if not self._is_table_ready(table, f"{table}_idx"):
+            return ("not_ready", [])
+
+        limit_plus_one = self.max_spatial_candidates + 1
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                f"""
+                SELECT {select_columns}
+                FROM {table}_idx idx
+                JOIN {table} {alias} ON idx.id = {alias}.id
+                WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
+                LIMIT ?
+                """,
+                (lon, lon, lat, lat, limit_plus_one),
+            )
+            candidates = cur.fetchall()
+        except sqlite3.OperationalError:
+            return ("query_error", [])
+
+        if len(candidates) > self.max_spatial_candidates:
+            return ("truncated", [])
+
+        matched = [row for row in candidates if wkb.loads(row["geom_wkb"]).covers(pt)]
+        return ("ok", matched)
+
+    def _query_nearest_by_radius(
+        self,
+        table: str,
+        alias: str,
+        select_columns: str,
+        lat: float,
+        lon: float,
+        radius_km: float,
+        limit: int,
+        row_builder: Callable[[sqlite3.Row, int], Dict[str, Any]],
+        empty_status: str = "ok",
+    ) -> Dict[str, Any]:
+        """R-tree BBOX による近傍探索と Haversine 距離昇順ソートを実行する共通ヘルパー。"""
+        if not self._is_table_ready(table, f"{table}_idx"):
+            return {"status": "not_loaded", "nearest": []}
+
+        delta_deg = radius_km / 111.0
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                f"""
+                SELECT {select_columns}
+                FROM {table}_idx idx
+                JOIN {table} {alias} ON idx.id = {alias}.id
+                WHERE idx.minX >= ? AND idx.maxX <= ? AND idx.minY >= ? AND idx.maxY <= ?
+                """,
+                (lon - delta_deg, lon + delta_deg, lat - delta_deg, lat + delta_deg),
+            )
+            rows = cur.fetchall()
+        except sqlite3.OperationalError:
+            return {"status": "not_loaded", "nearest": []}
+
+        if not rows:
+            return {"status": empty_status, "nearest": []}
+
+        results = [
+            row_builder(r, round(haversine_distance_m(lat, lon, r["lat"], r["lon"])))
+            for r in rows
+        ]
+        results.sort(key=lambda x: x["distance_from_query_m"])
+        return {"status": "ok", "nearest": results[:limit]}
 
     @staticmethod
     def _is_tokyo_city_identifier(value: Any) -> bool:
@@ -872,42 +950,35 @@ class TokyoSpatialDB:
 
     def _lookup_embankment(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
         """大規模盛土造成地 (A54 谷埋め型・腹付け型) 判定"""
-        if not self._is_table_ready("embankment", "embankment_idx"):
+        status, rows = self._fetch_covering_rows(
+            "embankment",
+            pt,
+            lat,
+            lon,
+            "e.id, e.fill_code, e.fill_number, e.geom_wkb",
+            "e",
+        )
+        if status == "not_ready":
             return {"status": "not_loaded", "reason": "データセット準備中"}
-
-        limit_plus_one = self.max_spatial_candidates + 1
-        cur = self.conn.cursor()
-        try:
-            cur.execute("""
-            SELECT e.id, e.fill_code, e.fill_number, e.geom_wkb
-            FROM embankment_idx idx
-            JOIN embankment e ON idx.id = e.id
-            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
-            LIMIT ?
-            """, (lon, lon, lat, lat, limit_plus_one))
-            candidates = cur.fetchall()
-        except sqlite3.OperationalError:
+        if status == "query_error":
             return {"status": "not_loaded", "reason": "クエリ実行エラー"}
-
-        if len(candidates) > self.max_spatial_candidates:
+        if status == "truncated":
             return {"status": "not_loaded", "reason": "空間候補上限超過（Fail-Closed）"}
 
         matched = []
         seen = set()
-        for row in candidates:
-            geom = wkb.loads(row["geom_wkb"])
-            if geom.covers(pt):
-                fcode = row["fill_code"]
-                fnum = row["fill_number"]
-                key = (fcode, fnum)
-                if key not in seen:
-                    seen.add(key)
-                    fill_type = "谷埋め型盛土" if fcode == "1" else ("腹付け型盛土" if fcode == "2" else "造成地")
-                    matched.append({
-                        "fill_code": fcode,
-                        "fill_type": fill_type,
-                        "fill_number": fnum
-                    })
+        for row in rows:
+            fcode = row["fill_code"]
+            fnum = row["fill_number"]
+            key = (fcode, fnum)
+            if key not in seen:
+                seen.add(key)
+                fill_type = "谷埋め型盛土" if fcode == "1" else ("腹付け型盛土" if fcode == "2" else "造成地")
+                matched.append({
+                    "fill_code": fcode,
+                    "fill_type": fill_type,
+                    "fill_number": fnum
+                })
 
         if matched:
             return {"status": "ok", "is_designated": True, "zones": matched}
@@ -1223,35 +1294,27 @@ class TokyoSpatialDB:
         }
 
     def _lookup_flood(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
-        if not self._is_table_ready("flood_risk", "flood_risk_idx"):
+        status, rows = self._fetch_covering_rows(
+            "flood_risk",
+            pt,
+            lat,
+            lon,
+            "f.river_name, f.rank_code, f.depth_label, f.geom_wkb",
+            "f",
+        )
+        if status in ("not_ready", "query_error"):
             return {"status": "not_loaded", "is_flooded": None}
-
-        limit_plus_one = self.max_spatial_candidates + 1
-        cur = self.conn.cursor()
-        try:
-            cur.execute("""
-            SELECT f.river_name, f.rank_code, f.depth_label, f.geom_wkb
-            FROM flood_risk_idx idx
-            JOIN flood_risk f ON idx.id = f.id
-            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
-            LIMIT ?
-            """, (lon, lon, lat, lat, limit_plus_one))
-            candidates = cur.fetchall()
-        except sqlite3.OperationalError:
-            return {"status": "not_loaded", "is_flooded": None}
-
-        if len(candidates) > self.max_spatial_candidates:
+        if status == "truncated":
             return {"status": "not_loaded", "is_flooded": None, "reason": "空間候補上限超過（Fail-Closed）"}
 
-        matched = []
-        for row in candidates:
-            geom = wkb.loads(row["geom_wkb"])
-            if geom.covers(pt):
-                matched.append({
-                    "river_name": row["river_name"],
-                    "rank_code": row["rank_code"],
-                    "depth_label": row["depth_label"]
-                })
+        matched = [
+            {
+                "river_name": row["river_name"],
+                "rank_code": row["rank_code"],
+                "depth_label": row["depth_label"],
+            }
+            for row in rows
+        ]
 
         if not matched:
             return {"status": "no_match", "is_flooded": False, "note": "対象河川の想定最大規模浸水区域外"}
@@ -1266,35 +1329,27 @@ class TokyoSpatialDB:
         }
 
     def _lookup_landslide(self, pt: Point, lat: float, lon: float) -> Dict[str, Any]:
-        if not self._is_table_ready("landslide_risk", "landslide_risk_idx"):
+        status, rows = self._fetch_covering_rows(
+            "landslide_risk",
+            pt,
+            lat,
+            lon,
+            "l.hazard_type, l.zone_type, l.address, l.geom_wkb",
+            "l",
+        )
+        if status in ("not_ready", "query_error"):
             return {"status": "not_loaded", "is_warning_zone": None}
-
-        limit_plus_one = self.max_spatial_candidates + 1
-        cur = self.conn.cursor()
-        try:
-            cur.execute("""
-            SELECT l.hazard_type, l.zone_type, l.address, l.geom_wkb
-            FROM landslide_risk_idx idx
-            JOIN landslide_risk l ON idx.id = l.id
-            WHERE idx.minX <= ? AND idx.maxX >= ? AND idx.minY <= ? AND idx.maxY >= ?
-            LIMIT ?
-            """, (lon, lon, lat, lat, limit_plus_one))
-            candidates = cur.fetchall()
-        except sqlite3.OperationalError:
-            return {"status": "not_loaded", "is_warning_zone": None}
-
-        if len(candidates) > self.max_spatial_candidates:
+        if status == "truncated":
             return {"status": "not_loaded", "is_warning_zone": None, "reason": "空間候補上限超過（Fail-Closed）"}
 
-        matched = []
-        for row in candidates:
-            geom = wkb.loads(row["geom_wkb"])
-            if geom.covers(pt):
-                matched.append({
-                    "hazard_type": row["hazard_type"],
-                    "zone_type": row["zone_type"],
-                    "address": row["address"]
-                })
+        matched = [
+            {
+                "hazard_type": row["hazard_type"],
+                "zone_type": row["zone_type"],
+                "address": row["address"],
+            }
+            for row in rows
+        ]
 
         return {
             "status": "ok" if matched else "no_match",
@@ -1304,92 +1359,60 @@ class TokyoSpatialDB:
         }
 
     def _lookup_land_price(self, lat: float, lon: float, radius_km: float = 1.2) -> Dict[str, Any]:
-        if not self._is_table_ready("land_price", "land_price_idx"):
-            return {"status": "not_loaded", "nearest": []}
-
-        delta_deg = radius_km / 111.0
-        cur = self.conn.cursor()
-        cur.execute("""
-        SELECT p.id, p.price, p.change_rate, p.address, p.station_name, p.station_distance, p.lat, p.lon
-        FROM land_price_idx idx
-        JOIN land_price p ON idx.id = p.id
-        WHERE idx.minX >= ? AND idx.maxX <= ? AND idx.minY >= ? AND idx.maxY <= ?
-        """, (lon - delta_deg, lon + delta_deg, lat - delta_deg, lat + delta_deg))
-        rows = cur.fetchall()
-        if not rows:
-            return {"status": "no_match", "nearest": []}
-
-        results = []
-        for r in rows:
-            dist = haversine_distance_m(lat, lon, r["lat"], r["lon"])
-            results.append({
+        return self._query_nearest_by_radius(
+            table="land_price",
+            alias="p",
+            select_columns="p.id, p.price, p.change_rate, p.address, p.station_name, p.station_distance, p.lat, p.lon",
+            lat=lat,
+            lon=lon,
+            radius_km=radius_km,
+            limit=3,
+            empty_status="no_match",
+            row_builder=lambda r, dist: {
                 "price_yen_per_sqm": r["price"],
                 "change_rate_percent": r["change_rate"],
                 "address": r["address"],
                 "nearest_station": r["station_name"],
-                "distance_from_query_m": round(dist)
-            })
-        results.sort(key=lambda x: x["distance_from_query_m"])
-        return {"status": "ok", "nearest": results[:3]}
+                "distance_from_query_m": dist,
+            },
+        )
 
     def _lookup_medical(self, lat: float, lon: float, radius_km: float = 1.2) -> Dict[str, Any]:
-        if not self._is_table_ready("medical_facility", "medical_facility_idx"):
-            return {"status": "not_loaded", "nearest": []}
-
-        delta_deg = radius_km / 111.0
-        cur = self.conn.cursor()
-        try:
-            cur.execute("""
-            SELECT m.name, m.facility_type, m.address, m.departments, m.is_emergency, m.lat, m.lon
-            FROM medical_facility_idx idx
-            JOIN medical_facility m ON idx.id = m.id
-            WHERE idx.minX >= ? AND idx.maxX <= ? AND idx.minY >= ? AND idx.maxY <= ?
-            """, (lon - delta_deg, lon + delta_deg, lat - delta_deg, lat + delta_deg))
-            rows = cur.fetchall()
-        except sqlite3.OperationalError:
-            return {"status": "not_loaded", "nearest": []}
-
-        results = []
-        for r in rows:
-            dist = haversine_distance_m(lat, lon, r["lat"], r["lon"])
-            results.append({
+        return self._query_nearest_by_radius(
+            table="medical_facility",
+            alias="m",
+            select_columns="m.name, m.facility_type, m.address, m.departments, m.is_emergency, m.lat, m.lon",
+            lat=lat,
+            lon=lon,
+            radius_km=radius_km,
+            limit=5,
+            empty_status="ok",
+            row_builder=lambda r, dist: {
                 "name": r["name"],
                 "facility_type": r["facility_type"],
                 "address": r["address"],
                 "departments": r["departments"],
                 "is_emergency": bool(r["is_emergency"]),
-                "distance_from_query_m": round(dist)
-            })
-        results.sort(key=lambda x: x["distance_from_query_m"])
-        return {"status": "ok", "nearest": results[:5]}
+                "distance_from_query_m": dist,
+            },
+        )
 
     def _lookup_nursery(self, lat: float, lon: float, radius_km: float = 1.0) -> Dict[str, Any]:
-        if not self._is_table_ready("nursery_facility", "nursery_facility_idx"):
-            return {"status": "not_loaded", "nearest": []}
-
-        delta_deg = radius_km / 111.0
-        cur = self.conn.cursor()
-        try:
-            cur.execute("""
-            SELECT n.name, n.address, n.facility_type_code, n.lat, n.lon
-            FROM nursery_facility_idx idx
-            JOIN nursery_facility n ON idx.id = n.id
-            WHERE idx.minX >= ? AND idx.maxX <= ? AND idx.minY >= ? AND idx.maxY <= ?
-            """, (lon - delta_deg, lon + delta_deg, lat - delta_deg, lat + delta_deg))
-            rows = cur.fetchall()
-        except sqlite3.OperationalError:
-            return {"status": "not_loaded", "nearest": []}
-
-        results = []
-        for r in rows:
-            dist = haversine_distance_m(lat, lon, r["lat"], r["lon"])
-            results.append({
+        return self._query_nearest_by_radius(
+            table="nursery_facility",
+            alias="n",
+            select_columns="n.name, n.address, n.facility_type_code, n.lat, n.lon",
+            lat=lat,
+            lon=lon,
+            radius_km=radius_km,
+            limit=5,
+            empty_status="ok",
+            row_builder=lambda r, dist: {
                 "name": r["name"],
                 "address": r["address"],
-                "distance_from_query_m": round(dist)
-            })
-        results.sort(key=lambda x: x["distance_from_query_m"])
-        return {"status": "ok", "nearest": results[:5]}
+                "distance_from_query_m": dist,
+            },
+        )
 
     def close(self):
         self.conn.close()
